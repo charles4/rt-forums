@@ -1,0 +1,25 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>{{ post.title }} <small>by {{ post.author.lastname }}</small></h3>
+	<ul>
+	{% for comment in comments %}
+		<li>{{ comment.content }}</li>
+	{% else %}
+		<li>There are no comments</li>
+	{% endfor %}
+	</ul>
+
+	<form method="POST">
+		<textarea name='comment'></textarea>
+		<button>Comment</button>
+	</form>
+{% endblock %}	

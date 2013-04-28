@@ -1,0 +1,18 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>{{ student.firstname }} {{ student.lastname }} <small> {{ student.grade.name }}</small></h3>
+	<form method="POST">
+		<input type='text' name='title'></input>
+		<textarea name="body"></textarea>
+		<button>Post</button>
+	</form>
+{% endblock %}	

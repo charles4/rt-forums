@@ -1,0 +1,21 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>{{ student.firstname }} {{ student.lastname }} <small> {{ student.grade.name }}</small></h3>
+	<a href='/home/{{ student.grade.name }}/{{ student.id }}/compose'><button>Compose Post</button></a>
+	<ul>
+		{% for post in posts %}
+			<li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'>{{ post.title }}</a></li>
+		{% else %}
+			<li>No posts found.</li>
+		{% endfor %}
+	</ul>
+{% endblock %}

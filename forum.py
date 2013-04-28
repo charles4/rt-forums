@@ -1,0 +1,586 @@
+from flask import Flask, render_template, session, redirect, url_for, abort, request, flash
+from flask.ext.sqlalchemy import SQLAlchemy
+from flaskext.bcrypt import Bcrypt 
+
+from sqlalchemy import exc
+
+from functools import wraps
+import time
+from datetime import datetime
+
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18\x8a|I\xf4U'
+
+
+bcrypt = Bcrypt(app)
+db = SQLAlchemy(app)
+
+
+###### define database structure ####
+
+class School(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	schoolname = db.Column(db.String(128))
+	country = db.Column(db.String(64))
+	created = db.Column(db.DateTime)
+
+	def __init__(self, schoolname, country, create_date=None):
+		self.schoolname = schoolname
+		self.country = country
+		if create_date is None:
+			create_date = datetime.utcnow()
+		self.created = create_date
+
+
+	def __repr__(self):
+		return '<school ' + self.schoolname + ">"
+
+class Teacher(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	firstname = db.Column(db.String(32))
+	lastname = db.Column(db.String(32))
+	email = db.Column(db.String(128), unique=True)
+	phash = db.Column(db.String(64))
+	isAdmin = db.Column(db.String(5))
+	created = db.Column(db.DateTime)
+	secretquestion = db.Column(db.String(256))
+	secretanswer = db.Column(db.String(256))
+
+	### db relationships
+	school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
+	school = db.relationship('School', backref=db.backref('teachers', lazy='dynamic'))
+
+	def __init__(self, firstname, lastname, email, password, school, secretquestion, secretanswer, isAdmin=False, create_date=None):
+		self.firstname = firstname
+		self.lastname = lastname
+		self.email = email
+		self.phash = bcrypt.generate_password_hash(password, 14)
+		self.isAdmin = isAdmin
+		if create_date is None:
+			create_date = datetime.utcnow()
+		self.created = create_date
+		self.school = school
+		self.secretquestion = secretquestion
+		self.secretanswer = secretanswer
+
+
+	def __repr__(self):
+		return '<Teacher %r>' % (self.firstname + " " + self.lastname)
+
+class Grade(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	numeric_repr = db.Column(db.Integer)
+	name = db.Column(db.String(32))
+
+	### relationships
+	school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
+	school = db.relationship('School', backref=db.backref('grades', lazy='dynamic'))
+
+	def __init__(self, name, numeric_repr, school):
+		self.name = name
+		self.numeric_repr = numeric_repr
+		self.school = school
+
+	def __repr__(self):
+		return '<grade: %r>' % self.name
+
+class Student(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	firstname = db.Column(db.String(32))
+	lastname = db.Column(db.String(32))
+	created = db.Column(db.DateTime)
+
+	### relationships
+	grade_id = db.Column(db.Integer, db.ForeignKey('grade.id'))
+	grade = db.relationship('Grade', backref=db.backref('students',lazy='dynamic'))
+
+	def __init__(self, firstname, lastname, grade, create_date=None):
+		self.firstname = firstname
+		self.lastname = lastname
+		self.grade = grade
+		if create_date is None:
+			create_date = datetime.utcnow()
+		self.created = create_date
+
+	def __repr__(self):
+		return "<student %r>" % (self.firstname + " " + self.lastname)
+
+class Post(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	title = db.Column(db.String(256))
+	created = db.Column(db.DateTime)
+
+	## relationships
+	author_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
+	author = db.relationship('Teacher', backref=db.backref('posts',lazy='dynamic'))
+
+	student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+	student = db.relationship('Student', backref=db.backref('posts', lazy='dynamic'))
+
+	def __init__(self, title, teacher, student, create_date=None):
+		self.title = title
+		self.author = teacher
+		self.student = student
+		if create_date is None:
+			create_date = datetime.utcnow()
+		self.created = create_date
+
+	def __repr__(self):
+		return "<post %r>" % self.title
+
+class Comment(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	created = db.Column(db.DateTime)
+	content = db.Column(db.String)
+
+	### relationships
+	author_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
+	author = db.relationship('Teacher', backref=db.backref('comments', lazy='dynamic'))
+
+	post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+	post = db.relationship('Post', backref=db.backref('comments',lazy='dynamic'))
+
+	def __init__(self, content, teacher, post, create_date=None):
+		self.content = content
+		self.author = teacher
+		self.post = post
+		if create_date is None:
+			create_date = datetime.utcnow()
+		self.created = create_date
+
+		### for each teacher create a unviewed comment
+		teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
+		for t in teachers:
+			if t.id != session['user'].id:
+				uvc = UnviewedComment(self, t)
+				db.session.add(uvc)
+		db.session.commit()
+
+	def __repr__(self):
+		return "<comment %r>" % self.content
+
+class UnviewedComment(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+
+	### relationships
+	comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+	comment = db.relationship('Comment', backref=db.backref('unviewed', lazy='dynamic'))
+
+	teacher_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
+	teacher = db.relationship('Teacher', backref=db.backref('unviewed', lazy='dynamic'))
+
+	def __init__(self, comment, teacher):
+		self.comment=comment
+		self.teacher=teacher
+
+	def __repr__(self):
+		return "<UnviewedComment %r>" % self.id
+
+class PermissionToken(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+
+	### relationships
+	student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+	student = db.relationship('Student', backref=db.backref('tokens', lazy='dynamic'))
+
+	teacher_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
+	teacher = db.relationship('Teacher', backref=db.backref('tokens', lazy='dynamic'))
+
+	def __init__(self, post, teacher):
+		self.post = post
+		self.teacher = teacher
+
+	def __repr__(self):
+		return "<PermissionToken %r>" % self.id
+
+#### wrappers ####
+
+def methodTimer(function):
+	@wraps(function)
+	def decorated_view(*args, **kwargs):
+		t = time.time()
+		result = function(*args, **kwargs)
+		print function.__name__ + " took " + str(time.time() - t) + " seconds."
+		return result
+	return decorated_view
+
+def requireLogin(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		if 'user' in session:
+			return fn(*args, **kwargs)
+		return redirect(url_for("route_login"))
+	return decorated
+
+def requireAdmin(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		if "user" in session:
+			if session["user"].isAdmin == "1":
+				return fn(*args, **kwargs)
+		abort(401)
+
+	return decorated
+
+### General Methods ###
+
+def logout():
+	session.pop('user', None)
+
+def createGrades(school):
+	db.session.add(Grade("Kindergarden", 0, school))
+	db.session.add(Grade("First Grade", 1, school))
+	db.session.add(Grade("Second Grade", 2, school))
+	db.session.add(Grade("Third Grade", 3, school))
+	db.session.add(Grade("Fourth Grade", 4, school))
+	db.session.add(Grade("Fifth Grade", 5, school))
+	db.session.add(Grade("Sixth Grade", 6, school))
+	db.session.add(Grade("Seventh Grade", 7, school))
+	db.session.add(Grade("Eighth Grade", 8, school))
+
+	try:
+		db.session.commit()
+	except exc.SQLAlchemyError, e:
+		print str(e)
+
+
+### routes ###
+
+@app.route("/", methods=['GET', 'POST'])
+def route_login():
+	if request.method == "POST":
+		user = Teacher.query.filter_by(email=request.form['email']).first()
+
+		if bcrypt.check_password_hash(user.phash, request.form['password']):
+			session['user'] = user
+			return redirect(url_for('route_home'))
+
+		else:
+			flash('You entered an incorrect password.')
+			return render_template("template_login.html")
+	else:
+		return render_template("template_login.html")
+
+@app.route("/logout")
+def route_logout():
+	logout()
+	return redirect(url_for('route_login'))
+
+
+@app.route("/signup", methods=['GET', 'POST'])
+def route_register():
+	if request.method == "POST":
+		### validate forms
+		if not request.form['schoolname']:
+			flash("Please enter the name of your school.")
+			return render_template("template_registration.html")
+		if not request.form['country']:
+			flash("Please enter the country your school is based in.")
+			return render_template("template_registration.html")
+		if not request.form['firstname']:
+			flash("Please enter your firstname.")
+			return render_template("template_registration.html")
+		if not request.form['lastname']:
+			flash("Please enter your lastname.")
+			return render_template("template_registration.html")
+		if not request.form['secretquestion']:
+			flash("Please enter a secret question.")
+			return render_template("template_registration.html")
+		if not request.form['secretanswer']:
+			flash("Please enter a answer to your secret question.")
+			return render_template("template_registration.html")
+		if not request.form['email']:
+			flash("Please enter your email address.")
+			return render_template("template_registration.html")
+		if not request.form['password']:
+			flash("Please enter a password.")
+			return render_template("template_registration.html")
+
+		### setup db entries
+		s = School(schoolname=request.form['schoolname'], 
+					country=request.form['country'])
+		db.session.add(s)
+		t = Teacher(firstname=request.form['firstname'], 
+					lastname=request.form['lastname'], 
+					email=request.form['email'], 
+					password=request.form['password'],
+					school=s,
+					secretquestion=request.form['secretquestion'],
+					secretanswer=request.form['secretanswer'], 
+					isAdmin=True)
+		db.session.add(t)
+
+		### try to commit changes to the db
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("I'm sorry, the email address you entered is already registered. Details: " + str(e))
+			return render_template("template_registration.html")
+
+		### try to create grades for the school
+		createGrades(s)
+
+		### log user in and redirect to homepage
+		user = Teacher.query.filter_by(email=t.email).first()
+		session['user'] = user
+		return redirect(url_for('route_home'))
+
+	return render_template("template_registration.html")
+
+@app.route("/<school_id>/invited/<email>", methods=['GET', 'POST'])
+@methodTimer
+def route_invited_signup(school_id, email):
+
+	#### add verification of invite ####
+
+	if request.method == "POST":
+		if not request.form['firstname']:
+			flash("Please enter your firstname.")
+			return render_template("template_registration.html")
+		if not request.form['lastname']:
+			flash("Please enter your lastname.")
+			return render_template("template_registration.html")
+		if not request.form['secretquestion']:
+			flash("Please enter a secret question.")
+			return render_template("template_registration.html")
+		if not request.form['secretanswer']:
+			flash("Please enter a answer to your secret question.")
+			return render_template("template_registration.html")
+		if not request.form['email']:
+			flash("Please enter your email address.")
+			return render_template("template_registration.html")
+		if not request.form['password']:
+			flash("Please enter a password.")
+			return render_template("template_registration.html")
+
+		s = School.query.filter_by(id=school_id).first()
+
+		t = Teacher(firstname=request.form['firstname'], 
+					lastname=request.form['lastname'], 
+					email=request.form['email'], 
+					password=request.form['password'],
+					school=s,
+					secretquestion=request.form['secretquestion'],
+					secretanswer=request.form['secretanswer'], 
+					isAdmin=False)
+		db.session.add(t)
+
+		### try to commit changes to the db
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("I'm sorry, the email address you entered is already registered. Details: " + str(e))
+			return render_template("template_registration.html")
+
+		### log user in and redirect to homepage
+		user = Teacher.query.filter_by(email=t.email).first()
+		session['user'] = user
+		return redirect(url_for('route_home'))
+
+
+	return render_template("template_invited_user_registration.html", emailaddress=email)
+
+
+@app.route("/home")
+@methodTimer
+@requireLogin
+def route_home():
+	unviewed = UnviewedComment.query.filter_by(teacher_id=session['user'].id).order_by(UnviewedComment.id.desc())
+	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
+	print session['user'].isAdmin
+	return render_template("template_home.html", grades=grades, unviewed=unviewed)
+
+
+@app.route("/home/<grade>")
+@methodTimer
+@requireLogin
+def route_home_grade(grade):
+	g = Grade.query.filter_by(name=grade, school_id=session['user'].school_id).first()
+	students = Student.query.filter_by(grade_id=g.id).order_by(Student.lastname)
+	return render_template("template_home_grade.html", grade=g, students=students)
+
+@app.route("/home/<grade>/<student_id>", methods=['GET'])
+@methodTimer
+@requireLogin
+def route_home_grade_student(grade, student_id):
+	s = Student.query.filter_by(id=student_id).first()
+	g = Grade.query.filter_by(name=grade)
+	posts = Post.query.filter_by(student_id=student_id)
+
+	return render_template("template_home_grade_student.html", student=s, grade=g, posts=posts)
+
+@app.route("/home/<grade>/<student_id>/<post_id>", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_grade_student_post(grade, student_id, post_id):
+	s = Student.query.filter_by(id=student_id).first()
+	g = Grade.query.filter_by(name=grade).first()
+	p = Post.query.filter_by(id=post_id).first()
+	comments = Comment.query.filter_by(post_id=post_id).all()
+	
+	if request.method == "POST":
+
+		if not request.form['comment']:
+			flash("The comment you attempted to enter was blank.")
+			return render_template("template_home_grade_student_post.html", post=p, comments=comments)
+
+		c = Comment(content=request.form['comment'], teacher=session['user'], post=p)
+		db.session.add( c )
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error adding your comment: " + str(e))
+			return render_template("template_home_grade_student_post.html", post=p, comments=comments)
+
+	## requery comments to pick up the newly posted one
+	comments = Comment.query.filter_by(post_id=post_id).all()
+
+	### remove all relevant comments from the unviewed comments table
+	for comment in comments:
+		uvc = UnviewedComment.query.filter_by(comment=comment).first()
+		db.session.delete(uvc)
+	db.session.commit()
+
+	return render_template("template_home_grade_student_post.html", post=p, comments=comments)
+
+
+@app.route("/home/<grade>/<student_id>/compose", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_grade_student_compose(grade, student_id):
+	s = Student.query.filter_by(id=student_id).first()
+	g = Grade.query.filter_by(name=grade)
+
+	if request.method == "POST":
+		if not request.form['title']:
+			flash("Please include a title for your new post.")
+			return render_template("template_home_grade_student_compose.html", student=s)
+		if not request.form['body']:
+			flash("Please include something in the body of your new post.")
+			return render_template("template_home_grade_student_compose.html", student=s)
+
+		p = Post(title=request.form['title'], teacher=session['user'], student=s)
+		db.session.add( p )
+
+		c = Comment(content=request.form['body'], teacher=session['user'], post=p)
+		db.session.add( c )
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error creating your post: " + str(e))
+			return render_template("template_home_grade_student_compose.html", student=s)
+
+
+		return redirect(url_for('route_home_grade_student', grade=grade, student_id=student_id))
+
+	return render_template("template_home_grade_student_compose.html", student=s)
+
+@app.route("/home/admin")
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin():
+	return render_template("template_admin.html")
+
+@app.route("/home/admin/teachers")
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers():
+	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
+	return render_template("template_admin_teachers.html", teachers=teachers)
+
+@app.route("/home/admin/teachers/<teacher_id>")
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers_teacher(teacher_id):
+	teacher = Teacher.query.filter_by(id=teacher_id, school_id=session['user'].school_id).first()
+	if not teacher:
+		abort(404)
+	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
+
+	### setup list of allowed/not allowed
+	class Permission(object):
+		def __init__(self, student):
+			self.student=student
+			### determine if allowed or denied
+			token = PermissionToken.query.filter_by(student=student).first()
+			if token:
+				self.allowed = True
+			else:
+				self.allowed = False
+
+	class GradeBag(object):
+		def __init__(self, grade, permissions):
+			self.grade = grade
+			self.permissions = permissions
+
+
+	gradelist = []
+	for grade in grades:
+		gb = GradeBag(grade, [])
+		students = grade.students.order_by(Student.lastname)
+		for student in students:
+			gb.permissions.append( Permission( student ) )
+		gradelist.append(gb)
+
+	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist)
+
+@app.route("/home/admin/students", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_students():
+	if request.method == "POST":
+		### parse input to create new students
+		students = request.form['students'].split(",")
+		for student in students:
+			bits = student.split()
+			grade = Grade.query.filter_by(school_id=session['user'].school_id, numeric_repr=bits[2]).first()
+			db.session.add(Student(firstname=bits[1], lastname=bits[0], grade=grade))
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			print str(e)
+
+	### create an array of students by grade
+	class GradeBag(object):
+		def __init__(self, grade):
+			self.grade = grade
+			self.numeric_repr = grade.numeric_repr
+			self.students = grade.students.order_by(Student.lastname)
+
+		def __repr__(self):
+			return "<gradebag " + str(self.grade) + " : " + str(self.students) +">"
+
+	s_by_g = []
+	grades = Grade.query.filter_by(school_id=session['user'].school_id).order_by(Grade.numeric_repr)
+	for grade in grades:
+		s_by_g.append(GradeBag(grade=grade))
+	
+	return render_template("template_admin_students.html", students_by_grade=s_by_g)
+
+@app.route("/unviewed")
+def route_unviewed():
+	uvc = UnviewedComment.query.all()
+	print uvc
+	return str(uvc)
+
+def presets():
+	db.drop_all()
+	db.create_all()
+
+
+
+if __name__ == "__main__":
+	#presets()
+
+	app.debug = True
+	app.run()
+
+

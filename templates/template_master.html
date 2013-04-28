@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    {% block head %}
+    <title>{% block title %}{% endblock %}</title>
+    {% endblock %}
+
+</head>
+<body>
+    <div class="container">
+        {% block breadcrumbs %}{% endblock %}
+
+        {% block messages %}
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul class=flashes>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            {% endwith %}
+        {% endblock %}
+        {% block content %}{% endblock %}
+    </div>
+    <div id="footer" class='container'>
+        {% block footer %}
+        &copy; Copyright 2012 by <a href="http://domain.invalid/">Somebody</a>.
+        {% endblock %}
+    </div>
+</body>

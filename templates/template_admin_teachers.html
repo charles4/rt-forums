@@ -1,0 +1,21 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>Manage teacher accounts</h3>
+	<button>Invite a teacher to join</button>
+	<ul>
+		{% for teacher in teachers %}
+			<li><a href='/home/admin/teachers/{{ teacher.id }}'>{{ teacher.lastname }}, {{ teacher.firstname }}</a></li>
+		{% else %}
+			<li>No teachers found</li>
+		{% endfor %}
+	</ul>
+{% endblock %}	

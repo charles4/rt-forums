@@ -1,0 +1,35 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>{{ session.user }}</h3>
+	<h4>Unread Comments and Posts</h4>
+		<ul>
+			{% for uv in unviewed %}
+				<li><a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}'>View</a> {{ uv.comment.content }} by {{ uv.comment.author.lastname }}</li>
+			{% else %}
+				<li>You have no unviewed comments or posts.</li>
+			{% endfor %}
+		</ul>
+	<h4>Forums</h4>
+	<ul>
+		{% for grade in grades %}
+			<li><a href='/home/{{ grade.name }}'>{{ grade.name }}</a></li>
+		{% endfor %}
+	</ul>
+
+
+	{% if session.user.isAdmin == "1" %}
+		<h4>Administration</h4>
+		<ul>
+			<li><a href='/home/admin'>Admin</a></li>
+		</ul>
+	{% endif %}
+{% endblock %}

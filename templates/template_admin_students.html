@@ -1,0 +1,30 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+	<h3>Manage Students</h3>
+	<form method="POST">
+		<textarea name="students"></textarea>
+		<button>Create</button>
+	</form>
+
+	{% for grade in students_by_grade %}
+		<b> {{ grade.grade.name }} </b>
+		<ul>
+		{% for student in grade.students %}
+			<li>{{ student.lastname }}, {{ student.firstname }}</li>
+		{% else %}
+			<li>No students found</li>
+		{% endfor %}
+		</ul>
+	
+	{% endfor %}
+
+{% endblock %}

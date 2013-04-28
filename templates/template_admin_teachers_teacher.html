@@ -1,0 +1,47 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block content %}
+<h5>{{ teacher.lastname }}, {{ teacher.firstname }}</h5>
+<div>is an admin: {{ teacher.isAdmin }}</div>
+<div>created: {{ teacher.created }}</div>
+<div>email: {{ teacher.email }}</div>
+
+<h5>Permissions</h5>
+<form method="POST">
+<button>Save Settings</button>
+<table>
+	{% for grade in grades %}
+		<tr>
+			<td >{{ grade.grade.name }}</td>
+		</tr>
+		<tr>
+			<td></td><td><input type='checkbox'></input><b>Allow Access to All Students in {{ grade.grade.name }}</b>
+		</tr>
+		{% for permission in grade.permissions %}
+			<tr>
+				<td></td>
+				<td>{% if permission.allowed %}
+						<input type='checkbox' name='student-{{ permission.student.id }}' checked></input>
+					{% else %}
+						<input type='checkbox' name='student-{{ permission.student.id }}'></input>
+					{% endif %}	
+				{{ permission.student.lastname }}, {{ permission.student.firstname }}
+				</td>
+
+			</tr>
+		{% else %}
+			<tr><td></td><td>There are no students in this grade</td></tr>
+		{% endfor %}
+	{% endfor %}
+</table>
+<button>Save Settings</button>
+</form>
+{% endblock %}

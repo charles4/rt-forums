@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    {% block head %}
+    <title>{% block title %}{% endblock %}</title>
+    {% endblock %}
+
+</head>
+<body>
+    {% block messages %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class=flashes>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+    {% endblock %}
+
+	{% block content %}
+	<form method='POST'>
+		<legend>Login</legend>
+
+		<label for="email">Your Email Address:</label>
+		<input type="email" name="email"></input>
+		
+		<label for="password">Password:</label>
+		<input type="password" name="password"></input>
+
+		<button>Login</button>
+	</form>
+
+	{% endblock %}
+
+</body>
