@@ -23,7 +23,7 @@
 			<td >{{ grade.grade.name }}</td>
 		</tr>
 		<tr>
-			<td></td><td><input type='checkbox'></input><b>Allow Access to All Students in {{ grade.grade.name }}</b>
+			<td></td><td><input type='checkbox' name='allowall-{{ grade.grade.id }}'></input><b>Allow Access to All Students in {{ grade.grade.name }}</b>
 		</tr>
 		{% for permission in grade.permissions %}
 			<tr>

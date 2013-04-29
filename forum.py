@@ -188,8 +188,8 @@ class PermissionToken(db.Model):
 	teacher_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
 	teacher = db.relationship('Teacher', backref=db.backref('tokens', lazy='dynamic'))
 
-	def __init__(self, post, teacher):
-		self.post = post
+	def __init__(self, student, teacher):
+		self.student = student
 		self.teacher = teacher
 
 	def __repr__(self):
@@ -222,6 +222,20 @@ def requireAdmin(fn):
 				return fn(*args, **kwargs)
 		abort(401)
 
+	return decorated
+
+def requirePermission(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		print kwargs
+		teacher = session['user']
+		db.session.add(teacher)
+		allowed = teacher.tokens.all()
+		for token in allowed:
+			if str(token.student_id) == str(kwargs["student_id"]):
+				return fn(*args, **kwargs)
+		flash("You don't have permission to view the forum belonging to that student. Your school's admin can fix that.")
+		return redirect(url_for("route_home_grade", grade=kwargs["grade"]))
 	return decorated
 
 ### General Methods ###
@@ -398,12 +412,23 @@ def route_home():
 @requireLogin
 def route_home_grade(grade):
 	g = Grade.query.filter_by(name=grade, school_id=session['user'].school_id).first()
-	students = Student.query.filter_by(grade_id=g.id).order_by(Student.lastname)
-	return render_template("template_home_grade.html", grade=g, students=students)
+	### only show students teacher has permission to view
+	teacher = session['user']
+	db.session.add(teacher)
+	tokens = teacher.tokens.all()
+
+	allowed_students = []
+	for token in tokens:
+		student = Student.query.filter_by(id=token.student_id).first()
+		allowed_students.append(student)
+
+	### have to sort here b/c can't get tokens to sort off of Token.student.lastname for some reason
+	return render_template("template_home_grade.html", grade=g, students=sorted(allowed_students, key=lambda student:student.lastname))
 
 @app.route("/home/<grade>/<student_id>", methods=['GET'])
 @methodTimer
 @requireLogin
+@requirePermission
 def route_home_grade_student(grade, student_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade)
@@ -414,6 +439,7 @@ def route_home_grade_student(grade, student_id):
 @app.route("/home/<grade>/<student_id>/<post_id>", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
+@requirePermission
 def route_home_grade_student_post(grade, student_id, post_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade).first()
@@ -441,7 +467,8 @@ def route_home_grade_student_post(grade, student_id, post_id):
 	### remove all relevant comments from the unviewed comments table
 	for comment in comments:
 		uvc = UnviewedComment.query.filter_by(comment=comment).first()
-		db.session.delete(uvc)
+		if uvc:
+			db.session.delete(uvc)
 	db.session.commit()
 
 	return render_template("template_home_grade_student_post.html", post=p, comments=comments)
@@ -450,6 +477,7 @@ def route_home_grade_student_post(grade, student_id, post_id):
 @app.route("/home/<grade>/<student_id>/compose", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
+@requirePermission
 def route_home_grade_student_compose(grade, student_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade)
@@ -494,7 +522,7 @@ def route_home_admin_teachers():
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 	return render_template("template_admin_teachers.html", teachers=teachers)
 
-@app.route("/home/admin/teachers/<teacher_id>")
+@app.route("/home/admin/teachers/<teacher_id>", methods=['POST', 'GET'])
 @methodTimer
 @requireLogin
 @requireAdmin
@@ -503,6 +531,38 @@ def route_home_admin_teachers_teacher(teacher_id):
 	if not teacher:
 		abort(404)
 	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
+
+	if request.method == "POST":
+		print str(request.form)
+		### clear out users previous permissions
+		pts = teacher.tokens.all()
+		for p in pts:
+			db.session.delete(p)
+		db.session.commit()
+
+		### iterate through form
+		for entry in request.form:
+			splitted = entry.split("-")
+			if splitted[0] == "student":
+				studentid = splitted[1]
+				student = Student.query.filter_by(id=studentid).first()
+				token = PermissionToken(student=student, teacher=teacher)
+				db.session.add(token)
+				db.session.commit()
+
+			if splitted[0] == "allowall":
+				print "allowing all."
+				### find all students in grade, create token for each one
+				gradeid = splitted[1]
+				students = Student.query.filter_by(grade_id=gradeid).all()
+				for student in students:
+					token = PermissionToken(student=student, teacher=teacher)
+					db.session.add(token)
+				db.session.commit()
+
+		pts = teacher.tokens.all()
+
+
 
 	### setup list of allowed/not allowed
 	class Permission(object):
@@ -565,11 +625,6 @@ def route_home_admin_students():
 	
 	return render_template("template_admin_students.html", students_by_grade=s_by_g)
 
-@app.route("/unviewed")
-def route_unviewed():
-	uvc = UnviewedComment.query.all()
-	print uvc
-	return str(uvc)
 
 def presets():
 	db.drop_all()
