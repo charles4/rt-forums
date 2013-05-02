@@ -703,8 +703,8 @@ def route_home_admin_teachers():
 				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
 
 				msg = Message(content,
-                  sender="charles@roundtableforums.net",
-                  recipients=["charles4@email.arizona.edu"])
+                  sender="invite@roundtableforums.net",
+                  recipients=[email])
 				mail.send(msg)
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
@@ -832,7 +832,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	#presets()
+	presets()
 
 	app.debug = True
 	app.run()
