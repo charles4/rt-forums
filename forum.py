@@ -8,6 +8,15 @@ from functools import wraps
 import time
 from datetime import datetime
 
+import hashlib
+import random
+
+#### session management stuff
+from simplekv.memory import DictStore
+from flaskext.kvsession import KVSessionExtension
+
+store = DictStore()
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
@@ -16,6 +25,9 @@ app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18
 
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
+
+# this will replace the app's session handling
+KVSessionExtension(store, app)
 
 
 ###### define database structure ####
@@ -52,7 +64,7 @@ class Teacher(db.Model):
 	school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
 	school = db.relationship('School', backref=db.backref('teachers', lazy='dynamic'))
 
-	def __init__(self, firstname, lastname, email, password, school, secretquestion, secretanswer, isAdmin=False, create_date=None):
+	def __init__(self, email=None, school=None, firstname=None, lastname=None, password=None, secretquestion=None, secretanswer=None, isAdmin=False, create_date=None):
 		self.firstname = firstname
 		self.lastname = lastname
 		self.email = email
@@ -283,10 +295,77 @@ def route_login():
 	else:
 		return render_template("template_login.html")
 
+@app.route("/login/")
+def route_login_redirect():
+	return redirect(url_for("route_login"))
+
 @app.route("/logout/")
 def route_logout():
 	logout()
 	return redirect(url_for('route_login'))
+
+@app.route("/passwordreset/", methods=['GET'])
+def route_passwordreset_step1():
+	### generate onetime unique key
+	base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
+	salt = ''.join(random.sample(base, len(base)))
+	session['skey'] = hashlib.sha256(salt).hexdigest()
+
+	return render_template("template_resetpassword_step1.html", secret_key=session['skey'])
+
+@app.route("/passwordreset/step2/", methods=['GET', 'POST'])
+def route_passwordreset_step2():
+	
+	if request.method == "POST":
+		if request.form['secret_key']:
+			if request.form['secret_key'] == session['skey']:
+				### check if email is registered with us
+				t = Teacher.query.filter_by(email=request.form['email']).first()
+				if t != None:
+					### generate a code and email it to the user
+					### store email in session
+					session['email_for_password_reset'] = request.form['email']
+					return render_template("template_resetpassword_step2.html", email=request.form['email'], secret_key=session['skey'])
+				else:
+					flash("The email you entered does not appear to belong to an Round Table Forum account.")
+					return redirect(url_for("route_passwordreset_step1"))
+
+	return redirect(url_for("route_passwordreset_step1"))
+
+@app.route("/passwordreset/step3/", methods=['GET', 'POST'])
+def route_passwordreset_step3():
+
+	if request.method == "POST":
+		if request.form['secret_key']:
+			if request.form['code']:
+				if request.form['secret_key'] == session['skey']:
+					#if request.form['code'] == session['code']:
+					if request.form["code"] == "123":
+						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code='123')
+
+	return redirect(url_for("route_passwordreset_step1"))
+
+@app.route("/passwordreset/process/", methods=['POST'])
+def route_password_reset_process():
+
+	if request.form['secret_key']:
+		if request.form['code']:
+			if request.form['secret_key'] == session['skey']:
+				#if request.form['code'] == session['code']:
+				if request.form["code"] == "123":
+					if request.form["password1"] == request.form["password2"]:
+						t = Teacher.query.filter_by(email=session['email_for_password_reset']).first()
+						t.phash = bcrypt.generate_password_hash(request.form['password1'], 14)
+						db.session.commit()
+
+						return redirect(url_for("route_login"))
+
+					else:
+						flash("The confirm password line did not match the first password line.")
+						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code='123')
+
+	flash("There was a problem changing your password.")
+	return redirect(url_for("route_passwordreset_step3"))
 
 
 @app.route("/signup/", methods=['GET', 'POST'])
@@ -296,24 +375,31 @@ def route_register():
 		if not request.form['schoolname']:
 			flash("Please enter the name of your school.")
 			return render_template("template_registration.html")
+
 		if not request.form['country']:
 			flash("Please enter the country your school is based in.")
 			return render_template("template_registration.html")
+
 		if not request.form['firstname']:
 			flash("Please enter your firstname.")
 			return render_template("template_registration.html")
+
 		if not request.form['lastname']:
 			flash("Please enter your lastname.")
 			return render_template("template_registration.html")
+
 		if not request.form['secretquestion']:
 			flash("Please enter a secret question.")
 			return render_template("template_registration.html")
+
 		if not request.form['secretanswer']:
 			flash("Please enter a answer to your secret question.")
 			return render_template("template_registration.html")
+
 		if not request.form['email']:
 			flash("Please enter your email address.")
 			return render_template("template_registration.html")
+
 		if not request.form['password']:
 			flash("Please enter a password.")
 			return render_template("template_registration.html")
@@ -336,6 +422,8 @@ def route_register():
 		try:
 			db.session.commit()
 		except exc.SQLAlchemyError, e:
+			db.session.delete(s)
+			db.session.delete(t)
 			flash("I'm sorry, the email address you entered is already registered. Details: " + str(e))
 			return render_template("template_registration.html")
 
@@ -345,13 +433,20 @@ def route_register():
 		### log user in and redirect to homepage
 		user = Teacher.query.filter_by(email=t.email).first()
 		session['user'] = user
+		session['school'] = School.query.filter_by(id=s.id).first()
 		return redirect(url_for('route_home'))
 
 	return render_template("template_registration.html")
 
-@app.route("/<school_id>/invited/<email>/", methods=['GET', 'POST'])
+@app.route("/invite/<email>/", methods=['GET', 'POST'])
 @methodTimer
-def route_invited_signup(school_id, email):
+def route_invited_signup(email):
+	#### check if valid email
+	t = Teacher.query.filter_by(email=email).first()
+	print email
+	if not t:
+		print "t is none"
+		abort(404)
 
 	#### add verification of invite ####
 
@@ -368,24 +463,18 @@ def route_invited_signup(school_id, email):
 		if not request.form['secretanswer']:
 			flash("Please enter a answer to your secret question.")
 			return render_template("template_registration.html")
-		if not request.form['email']:
-			flash("Please enter your email address.")
-			return render_template("template_registration.html")
 		if not request.form['password']:
 			flash("Please enter a password.")
 			return render_template("template_registration.html")
 
-		s = School.query.filter_by(id=school_id).first()
+		s = School.query.filter_by(id=t.school_id).first()
 
-		t = Teacher(firstname=request.form['firstname'], 
-					lastname=request.form['lastname'], 
-					email=request.form['email'], 
-					password=request.form['password'],
-					school=s,
-					secretquestion=request.form['secretquestion'],
-					secretanswer=request.form['secretanswer'], 
-					isAdmin=False)
-		db.session.add(t)
+		t.firstname = request.form["firstname"]
+		t.lastname = request.form["lastname"]
+		t.password = bcrypt.generate_password_hash(request.form['password'], 14)
+		t.isAdmin = False
+		t.secretquestion = request.form["secretquestion"]
+		t.secretanswer = request.form["secretanswer"]
 
 		### try to commit changes to the db
 		try:
@@ -397,6 +486,7 @@ def route_invited_signup(school_id, email):
 		### log user in and redirect to homepage
 		user = Teacher.query.filter_by(email=t.email).first()
 		session['user'] = user
+		session['school'] = School.query.filter_by(id=s.id).first()
 		return redirect(url_for('route_home'))
 
 
@@ -495,7 +585,8 @@ def route_home_grade_student_post(grade, student_id, post_id):
 			flash("There was an error adding your comment: " + str(e))
 			return render_template("template_home_grade_student_post.html", post=p, comments=comments)
 
-	## requery comments to pick up the newly posted one
+	## requery comments to pick up the newly posted one (if there is one)
+	## not sure this step is necessary
 	comments = Comment.query.filter_by(post_id=post_id).all()
 
 	### remove all relevant comments from the unviewed comments table
@@ -506,6 +597,33 @@ def route_home_grade_student_post(grade, student_id, post_id):
 	db.session.commit()
 
 	return render_template("template_home_grade_student_post.html", post=p, comments=comments)
+
+@app.route("/home/<grade>/<student_id>/<post_id>/<comment_id>/edit", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comment_id):
+	s = Student.query.filter_by(id=student_id).first()
+	g = Grade.query.filter_by(name=grade).first()
+	p = Post.query.filter_by(id=post_id).first()
+	c = Comment.query.filter_by(id=comment_id).first()
+
+	if request.method == "POST":
+		if not request.form['comment']:
+			flash("The comment you entered was blank.")
+			return render_template("template_home_grade_student_post_comment.html", comment=c)
+
+		c.content = request.form['comment']
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error editing your comment: " + str(e))
+			return render_template("template_home_grade_student_post_comment.html", comment=c)
+
+		return redirect(url_for("route_home_grade_student_post", grade=grade, student_id=student_id, post_id=post_id))
+
+	return render_template("template_home_grade_student_post_comment.html", comment=c, student=s, post=p)
+
 
 
 @app.route("/home/<grade>/<student_id>/compose/", methods=['GET', 'POST'])
@@ -548,11 +666,32 @@ def route_home_grade_student_compose(grade, student_id):
 def route_home_admin():
 	return render_template("template_admin.html")
 
-@app.route("/home/admin/teachers/")
+@app.route("/home/admin/teachers/", methods=["GET", "POST"])
 @methodTimer
 @requireLogin
 @requireAdmin
 def route_home_admin_teachers():
+
+	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
+
+	if request.method == "POST":
+		if request.form["teachers"]:
+			emails = request.form['teachers'].split(",")
+			for email in emails:
+				school = School.query.filter_by(id=session['user'].school_id).first()
+				t = Teacher(email=email, school=school, password="123")
+				db.session.add(t)
+				try:
+					db.session.commit()
+				except exc.SQLAlchemyError, e:
+					flash("There was an error creating a teacher " + str(e))
+					return render_template("template_admin_teachers.html", teachers=teachers)
+
+				### after adding the initial teacher object to db
+				### send email invite
+				### a partial teacher object is added so that permissions can be assigned
+				### without waiting for the teacher to accept the invite
+
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 	return render_template("template_admin_teachers.html", teachers=teachers)
 
@@ -602,8 +741,9 @@ def route_home_admin_teachers_teacher(teacher_id):
 		def __init__(self, student):
 			self.student=student
 			### determine if allowed or denied
-			token = PermissionToken.query.filter_by(student=student).first()
-			if token:
+			token = PermissionToken.query.filter_by(student=student, teacher_id=teacher_id).first()
+			print str(token)
+			if token != None:
 				self.allowed = True
 			else:
 				self.allowed = False

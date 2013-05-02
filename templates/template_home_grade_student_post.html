@@ -31,7 +31,7 @@
 						{{ comment.author.firstname }} {{ comment.author.lastname }} 
 						<small> wrote at {{ comment.created }}
 						{% if comment.author.id == session.user.id %}
-							<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{ comment.id }}/edit'>Edit</a>
+							<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
 						{% endif %}
 						</small>
 					</h5>

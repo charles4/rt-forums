@@ -16,15 +16,15 @@
 {% block content %}
 
 	<h4>Unread Comments and Posts</h4>
-		<ul>
+		<ul class='no-dots'>
 			{% for uv in unviewed %}
-				<li><a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}'>View</a> {{ uv.comment.content }} by {{ uv.comment.author.lastname }}</li>
+				<li><a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}'>{{ uv.comment.content }}</a> by <small>{{ uv.comment.author.firstname }} {{ uv.comment.author.lastname }}.</small></li>
 			{% else %}
 				<li>You have no unviewed comments or posts.</li>
 			{% endfor %}
 		</ul>
 	<h4>Forums</h4>
-	<ul>
+	<ul class='no-dots'>
 		{% for grade in grades %}
 			<li><a href='/home/{{ grade.name }}'>{{ grade.name }} forums</a></li>
 		{% endfor %}
@@ -33,7 +33,7 @@
 
 	{% if session.user.isAdmin == "1" %}
 		<h4>Administration</h4>
-		<ul>
+		<ul class='no-dots'>
 			<li><a href='/home/admin'>Admin</a></li>
 		</ul>
 	{% endif %}

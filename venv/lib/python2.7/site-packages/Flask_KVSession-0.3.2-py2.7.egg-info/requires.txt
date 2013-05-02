@@ -1,0 +1,4 @@
+Flask
+simplekv
+werkzeug
+itsdangerous

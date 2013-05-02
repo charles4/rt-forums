@@ -1,0 +1,35 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+	<style>
+		.form{
+			width:100%;
+		}
+	</style>
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href="/home/{{ student.grade.name }}">{{ student.grade.name }}</a> <span class="divider">/</span></li>
+    <li><a href='/home/{{ student.grade.name }}/{{ student.id }}'>{{ student.firstname }} {{ student.lastname }}</a> <span class="divider">/</span></li>
+    <li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'>{{ post.title }}</a> <span class="divider">/</span></li>
+    <li class='active'>Edit your comment</li>
+    </ul>
+{% endblock %}
+{% block content %}
+
+	<h1>Edit</h1>
+	<h3>{{ post.title }} <small>{{ student.firstname }} {{ student.lastname }} </small></h3>
+	<form method="POST">
+		<label for='comment' >Your comment:</label>
+		<textarea name="comment" class='form'>{{ comment.content }}</textarea>
+		<button class='btn'>Save</button>
+	</form>
+
+{% endblock %}	
