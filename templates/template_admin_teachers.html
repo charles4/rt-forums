@@ -8,9 +8,18 @@
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href='/home/admin'>Admin</a> <span class='divider'>/</span></li>
+    <li class='active'>Manage Teachers</li>
+    </ul>
+{% endblock %}
 {% block content %}
-	<h3>Manage teacher accounts</h3>
+
+	<h4>Invite</h4>
 	<button>Invite a teacher to join</button>
+	<h4>Manage</h4>
 	<ul>
 		{% for teacher in teachers %}
 			<li><a href='/home/admin/teachers/{{ teacher.id }}'>{{ teacher.lastname }}, {{ teacher.firstname }}</a></li>

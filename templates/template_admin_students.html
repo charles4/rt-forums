@@ -3,17 +3,33 @@
 
 {% block head %}
 	{{ super() }}
+	<style>
+		.form{
+			width:100%;
+		}
+	</style>
+{% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href='/home/admin'>Admin</a> <span class='divider'>/</span></li>
+    <li class='active'>Manage Students</li>
+    </ul>
 {% endblock %}
 
-{% block messages %}
-	{{ super() }}
-{% endblock %}
 {% block content %}
-	<h3>Manage Students</h3>
+
+	<h4>Add students here</h4>
+	<p>Use format: "Lastname Firstname Grade, Lastname Firstname Grade, ..."</p>
+	<p>ex. "Bond James 5, Duck Donald 2, ..."
 	<form method="POST">
-		<textarea name="students"></textarea>
-		<button>Create</button>
+		<textarea name="students" class='form'></textarea>
+		<button class='btn'>Create</button>
 	</form>
+
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
 
 	{% for grade in students_by_grade %}
 		<b> {{ grade.grade.name }} </b>

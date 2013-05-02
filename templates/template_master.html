@@ -3,29 +3,78 @@
 <head>
     {% block head %}
     <title>{% block title %}{% endblock %}</title>
+    <script src='/static/jquery.1.9.js'></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.css'>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.css'>
     {% endblock %}
 
+    <style>
+        .mainmenu{
+            border-right: solid black 1px;
+        }
+        .mainmenu a{
+            color:black;
+        }
+        .footer{
+
+        }
+        .no-dots{
+            list-style-type:none;
+        }
+        .fixed-top{
+            position:fixed;
+            left:0px;
+            right:0px;
+            top:0px;
+        }
+        .margin-top{
+            margin-top: 50px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        {% block breadcrumbs %}{% endblock %}
+    <div class="container-fluid">
+        <div class='fixed-top'>
+                {% block breadcrumbs %}{% endblock %}
+        </div>
 
-        {% block messages %}
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul class=flashes>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-            {% endwith %}
-        {% endblock %}
-        {% block content %}{% endblock %}
+        <div class='row-fluid margin-top'>
+            <div class='span2 mainmenu'>
+                <ul class="nav nav-pills nav-stacked">
+                    <li class='disabled'><a href='/home'><h4>{{ session.school.schoolname }}</a></h4></li>
+                    <li class='disabled'><a href='#'>{{ session.user.firstname }} {{ session.user.lastname }}</a></li>
+                    <li class='disabled'><a href='#'>{{ session.user.email }}</a></li>
+                    <li><a href='/home'><b>Home</b></a></li>
+                    {% if session.user.isAdmin == "1" %}
+                        <li><a href='/home/admin'><b>Admin</b></a></li>
+
+                    {% endif %}
+                    <li><a href='/logout'><b>Logout</b></a></li>
+
+                </uL>
+            </div>
+            <div class='span9'>
+                {% block content %}
+                        {% block messages %}
+                            {% with messages = get_flashed_messages() %}
+                                {% if messages %}
+                                    <ul class="flashes no-dots error" >
+                                    {% for message in messages %}
+                                        <li>{{ message }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            {% endwith %}
+                       {% endblock %}
+
+                {% endblock %}
+            </div>
+        </div>
     </div>
-    <div id="footer" class='container'>
+    <div class='container footer'>
         {% block footer %}
-        &copy; Copyright 2012 by <a href="http://domain.invalid/">Somebody</a>.
+        You are logged in as {{ session.user.email }}. <a href='/logout'>Logout</a>.
         {% endblock %}
     </div>
 </body>

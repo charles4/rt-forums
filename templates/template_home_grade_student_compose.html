@@ -3,16 +3,33 @@
 
 {% block head %}
 	{{ super() }}
+	<style>
+		.form{
+			width:100%;
+		}
+	</style>
 {% endblock %}
 
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href="/home/{{ student.grade.name }}">{{ student.grade.name }}</a> <span class="divider">/</span></li>
+    <li><a href='/home/{{ student.grade.name }}/{{ student.id }}'>{{ student.firstname }} {{ student.lastname }}</a> <span class="divider">/</span></li>
+    <li class='active'>Compose a post</li>
+    </ul>
+{% endblock %}
 {% block content %}
+
+	<h1>Compose</h1>
 	<h3>{{ student.firstname }} {{ student.lastname }} <small> {{ student.grade.name }}</small></h3>
 	<form method="POST">
-		<input type='text' name='title'></input>
-		<textarea name="body"></textarea>
+		<label for='title'>Title:</label>
+		<input type='text' name='title' class='form'></input>
+		<label for='body' >Write your post here:</label>
+		<textarea name="body" class='form'></textarea>
 		<button>Post</button>
 	</form>
 {% endblock %}	

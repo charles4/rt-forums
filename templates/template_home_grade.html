@@ -8,11 +8,18 @@
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li class='active'>{{ grade.name }}</li>
+    </ul>
+{% endblock %}
 {% block content %}
-	<h3>{{ grade.name }}</h3>
-	<ul>
+
+	<h3>{{ grade.name }} forums</h3>
+	<ul class='no-dots'>
 		{% for student in students %}
-			<li><a href='/home/{{ grade.name }}/{{ student.id }}'>{{ student.lastname }}, {{ student.firstname }}</a></li>
+			<li><h5><a href='/home/{{ grade.name }}/{{ student.id }}'>{{ student.lastname }}, {{ student.firstname }}</a></h5></li>
 		{% else %}
 			<li>No students found</li>
 		{% endfor %}

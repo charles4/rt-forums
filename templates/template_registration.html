@@ -3,50 +3,74 @@
 <head>
     {% block head %}
     <title>{% block title %}{% endblock %}</title>
+    <script src='/static/jquery.1.9.js'></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.css'>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.css'>
     {% endblock %}
 
 </head>
 <body>
-	{% block messages %}
-       	{% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class=flashes>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        {% endwith %}
-    {% endblock %}
+	<div class='container'>
+
 	{% block body %}
-	<form method='POST'>
-		<legend>Sign your school up for Round Table Forums</legend>
+	<div class='row'>
+		<div class='span7'>
+			<h1>Round Table Forums</h1>
+			<h4>A forum system designed for teachers.</h4>
+		</div>
+		<div class='span5'>
 
-		<label for="schoolname">Name of your School</label>
-		<input type="text" name="schoolname"></input>
+			<form method='POST'>
+				<legend>Sign your school up for the beta</legend>
 
-		<label for="country">Country</label>
-		<input type='text' name='country'></input>
+				{% block messages %}
+					<div class='row'>
+					<div class='span5'>
+			       	{% with messages = get_flashed_messages() %}
+			            {% if messages %}
+			                <ul class=flashes>
+			                {% for message in messages %}
+			                    <li>{{ message }}</li>
+			                {% endfor %}
+			            </ul>
+			            {% endif %}
+			        {% endwith %}
+			   		</div>
+					</div>
+			    {% endblock %}
 
-		<label for="firstname">Your Firstname</label>
-		<input type="text" name="firstname"></input>
+				<label for="schoolname">Name of your School</label>
+				<input type="text" name="schoolname"></input>
 
-		<label for="lastname">Your Lastname</label>
-		<input type="text" name="lastname"></input>
+				<label for="country">Country</label>
+				<input type='text' name='country'></input>
 
-		<label for="secretquestion">Enter a secret question</label>
-		<input type='text' name='secretquestion'></input>
+				<label for="firstname">Your Firstname</label>
+				<input type="text" name="firstname"></input>
 
-		<label for='secretanswer'>Enter the answer to your secret question</label>
-		<input type='text' name='secretanswer'></input>
+				<label for="lastname">Your Lastname</label>
+				<input type="text" name="lastname"></input>
 
-		<label for="email">Your Email Address</label>
-		<input type="email" name="email"></input>
-		
-		<label for="password">Your Password</label>
-		<input type="password" name="password"></input>
+				<label for="secretquestion">Enter a secret question</label>
+				<input type='text' name='secretquestion'></input>
 
-		<button>Submit</button>
-	</form>
+				<label for='secretanswer'>Enter the answer to your secret question</label>
+				<input type='text' name='secretanswer'></input>
+
+				<label for="email">Your Email Address</label>
+				<input type="email" name="email"></input>
+				
+				<label for="password">Your Password</label>
+				<input type="password" name="password"></input>
+
+				<button>Submit</button>
+			</form>
+		</div>
+		<div class='span3'>
+
+		</div>
+	</div>
 	{% endblock %}
+	</div>
 </body>

@@ -8,7 +8,22 @@
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li class='active'>Admin</li>
+    </ul>
+{% endblock %}
 {% block content %}
-<a href="/home/admin/students">Manage Students</a>
-<a href="/home/admin/teachers">Manage Teachers</a>
+
+     <div class='row'>
+            <div class='span2'>
+                <ul class="nav nav-pills nav-stacked">
+                    <li><a href="/home/admin/students">Manage Students</a></li>
+                    <li><a href="/home/admin/teachers">Manage Teachers</a></li>
+                </uL>
+            </div>
+     </div>
+
+
 {% endblock %}

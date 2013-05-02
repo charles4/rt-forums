@@ -3,23 +3,46 @@
 
 {% block head %}
 	{{ super() }}
+		<style>
+		.form{
+			width:100%;
+		}
+		</style>
 {% endblock %}
 
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href="/home/{{ post.student.grade.name }}">{{ post.student.grade.name }}</a> <span class="divider">/</span></li>
+    <li><a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}'>{{ post.student.firstname }} {{ post.student.lastname }}</a> <span class="divider">/</span></li>
+    <li class='active'>{{ post.title }}</li>
+    </ul>
+{% endblock %}
 {% block content %}
-	<h3>{{ post.title }} <small>by {{ post.author.lastname }}</small></h3>
-	<ul>
-	{% for comment in comments %}
-		<li>{{ comment.content }}</li>
-	{% else %}
-		<li>There are no comments</li>
-	{% endfor %}
-	</ul>
 
-	<form method="POST">
-		<textarea name='comment'></textarea>
-		<button>Comment</button>
-	</form>
+	<div class='row'>
+		<div class='span10'>
+			<h3>{{ post.title }} <small>by {{ post.author.firstname }} {{ post.author.lastname }} about <a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}'>{{ post.student.firstname }} {{ post.student.lastname }}</a>.</small></h3>
+			<ul class='no-dots'>
+			{% for comment in comments %}
+				<li>
+					<h5> {{ comment.author.firstname }} {{ comment.author.lastname }} <small> wrote at {{ comment.created }}</small></h5>
+					{{ comment.content }}
+				</li>
+			{% else %}
+				<li>There are no comments</li>
+			{% endfor %}
+				<li>
+					<h6>Comment:</h6>
+					<form method="POST">
+					<textarea name='comment' class='form'></textarea>
+					<button class='btn'>Post Comment</button>
+					</form>
+				</li>
+			</ul>
+		</div>
+	</div>
 {% endblock %}	

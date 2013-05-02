@@ -8,12 +8,20 @@
 {% block messages %}
 	{{ super() }}
 {% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href="/home/{{ student.grade.name }}">{{ student.grade.name }}</a> <span class="divider">/</span></li>
+    <li class='active'>{{ student.firstname }} {{ student.lastname }}</li>
+    </ul>
+{% endblock %}
 {% block content %}
-	<h3>{{ student.firstname }} {{ student.lastname }} <small> {{ student.grade.name }}</small></h3>
-	<a href='/home/{{ student.grade.name }}/{{ student.id }}/compose'><button>Compose Post</button></a>
-	<ul>
+	
+	<h3><small>A forum about</small> {{ student.firstname }} {{ student.lastname }} <small> in the {{ student.grade.name }}.</small></h3>
+	<a href='/home/{{ student.grade.name }}/{{ student.id }}/compose'><button class='btn'>Compose Post</button></a>
+	<ul class='no-dots'>
 		{% for post in posts %}
-			<li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'>{{ post.title }}</a></li>
+			<li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'><h4>{{ post.title }}</a> <small> created at {{ post.created }}, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
 		{% else %}
 			<li>No posts found.</li>
 		{% endfor %}

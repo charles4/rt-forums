@@ -266,24 +266,30 @@ def createGrades(school):
 def route_login():
 	if request.method == "POST":
 		user = Teacher.query.filter_by(email=request.form['email']).first()
+		if user:
+			if bcrypt.check_password_hash(user.phash, request.form['password']):
+				session['user'] = user
+				session['grades'] = Grade.query.filter_by(school_id=session['user'].school_id).all()
+				session['school'] = School.query.filter_by(id=session['user'].school_id).first()
+				print session['school']
+				return redirect(url_for('route_home'))
 
-		if bcrypt.check_password_hash(user.phash, request.form['password']):
-			session['user'] = user
-			return redirect(url_for('route_home'))
-
+			else:
+				flash('You entered an incorrect password.')
+				return render_template("template_login.html")
 		else:
-			flash('You entered an incorrect password.')
+			flash("The email address you entered was not found.")
 			return render_template("template_login.html")
 	else:
 		return render_template("template_login.html")
 
-@app.route("/logout")
+@app.route("/logout/")
 def route_logout():
 	logout()
 	return redirect(url_for('route_login'))
 
 
-@app.route("/signup", methods=['GET', 'POST'])
+@app.route("/signup/", methods=['GET', 'POST'])
 def route_register():
 	if request.method == "POST":
 		### validate forms
@@ -343,7 +349,7 @@ def route_register():
 
 	return render_template("template_registration.html")
 
-@app.route("/<school_id>/invited/<email>", methods=['GET', 'POST'])
+@app.route("/<school_id>/invited/<email>/", methods=['GET', 'POST'])
 @methodTimer
 def route_invited_signup(school_id, email):
 
@@ -397,46 +403,74 @@ def route_invited_signup(school_id, email):
 	return render_template("template_invited_user_registration.html", emailaddress=email)
 
 
-@app.route("/home")
+@app.route("/home/")
 @methodTimer
 @requireLogin
 def route_home():
 	unviewed = UnviewedComment.query.filter_by(teacher_id=session['user'].id).order_by(UnviewedComment.id.desc())
 	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
-	print session['user'].isAdmin
-	return render_template("template_home.html", grades=grades, unviewed=unviewed)
+
+	### only show grades that the user has students they are allowed to view in
+	shown_grades = []
+	for grade in grades:
+		show_grade = False
+
+		students = grade.students.all()
+		teacher = session['user']
+		db.session.add(teacher)
+		tokens = teacher.tokens.all()
+
+		allowed_ids = []
+		for t in tokens:
+			allowed_ids.append(t.student_id)
+
+		for student in students:
+			if student.id in allowed_ids:
+				show_grade = True
+				break
+
+		if show_grade == True:
+			shown_grades.append(grade)
+
+	return render_template("template_home.html", grades=shown_grades, unviewed=unviewed)
 
 
-@app.route("/home/<grade>")
+@app.route("/home/<grade>/")
 @methodTimer
 @requireLogin
 def route_home_grade(grade):
 	g = Grade.query.filter_by(name=grade, school_id=session['user'].school_id).first()
+	students = Student.query.filter_by(grade=g).all()
+
 	### only show students teacher has permission to view
 	teacher = session['user']
 	db.session.add(teacher)
 	tokens = teacher.tokens.all()
 
-	allowed_students = []
+	list_of_allowed_student_ids = []
 	for token in tokens:
-		student = Student.query.filter_by(id=token.student_id).first()
-		allowed_students.append(student)
+		list_of_allowed_student_ids.append(token.student_id)
 
-	### have to sort here b/c can't get tokens to sort off of Token.student.lastname for some reason
+	allowed_students = []
+	for student in students:
+		if student.id in list_of_allowed_student_ids:
+			allowed_students.append(student)
+
+	### sort here to ensure something doesn't get misordered by for loops
 	return render_template("template_home_grade.html", grade=g, students=sorted(allowed_students, key=lambda student:student.lastname))
 
-@app.route("/home/<grade>/<student_id>", methods=['GET'])
+@app.route("/home/<grade>/<student_id>/", methods=['GET'])
 @methodTimer
 @requireLogin
 @requirePermission
 def route_home_grade_student(grade, student_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade)
-	posts = Post.query.filter_by(student_id=student_id)
+	posts = Post.query.filter_by(student_id=student_id).order_by(Post.id.desc())
 
 	return render_template("template_home_grade_student.html", student=s, grade=g, posts=posts)
 
-@app.route("/home/<grade>/<student_id>/<post_id>", methods=['GET', 'POST'])
+@app.route("/home/<grade>/<student_id>/<post_id>/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
 @requirePermission
@@ -468,13 +502,13 @@ def route_home_grade_student_post(grade, student_id, post_id):
 	for comment in comments:
 		uvc = UnviewedComment.query.filter_by(comment=comment).first()
 		if uvc:
-			db.session.delete(uvc)
+			  db.session.delete(uvc)
 	db.session.commit()
 
 	return render_template("template_home_grade_student_post.html", post=p, comments=comments)
 
 
-@app.route("/home/<grade>/<student_id>/compose", methods=['GET', 'POST'])
+@app.route("/home/<grade>/<student_id>/compose/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
 @requirePermission
@@ -507,14 +541,14 @@ def route_home_grade_student_compose(grade, student_id):
 
 	return render_template("template_home_grade_student_compose.html", student=s)
 
-@app.route("/home/admin")
+@app.route("/home/admin/")
 @methodTimer
 @requireLogin
 @requireAdmin
 def route_home_admin():
 	return render_template("template_admin.html")
 
-@app.route("/home/admin/teachers")
+@app.route("/home/admin/teachers/")
 @methodTimer
 @requireLogin
 @requireAdmin
@@ -522,7 +556,7 @@ def route_home_admin_teachers():
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 	return render_template("template_admin_teachers.html", teachers=teachers)
 
-@app.route("/home/admin/teachers/<teacher_id>", methods=['POST', 'GET'])
+@app.route("/home/admin/teachers/<teacher_id>/", methods=['POST', 'GET'])
 @methodTimer
 @requireLogin
 @requireAdmin
@@ -551,7 +585,6 @@ def route_home_admin_teachers_teacher(teacher_id):
 				db.session.commit()
 
 			if splitted[0] == "allowall":
-				print "allowing all."
 				### find all students in grade, create token for each one
 				gradeid = splitted[1]
 				students = Student.query.filter_by(grade_id=gradeid).all()
@@ -591,7 +624,7 @@ def route_home_admin_teachers_teacher(teacher_id):
 
 	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist)
 
-@app.route("/home/admin/students", methods=['GET', 'POST'])
+@app.route("/home/admin/students/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
 @requireAdmin
@@ -603,6 +636,7 @@ def route_home_admin_students():
 			bits = student.split()
 			grade = Grade.query.filter_by(school_id=session['user'].school_id, numeric_repr=bits[2]).first()
 			db.session.add(Student(firstname=bits[1], lastname=bits[0], grade=grade))
+			flash(bits[0] + ", " + bits[1] + " added to " + grade.name + ".")
 		try:
 			db.session.commit()
 		except exc.SQLAlchemyError, e:
