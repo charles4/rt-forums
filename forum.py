@@ -18,7 +18,7 @@ from flaskext.kvsession import KVSessionExtension
 ### email
 from flask_mail import Mail
 MAIL_USERNAME = 'charles'
-MAIL_PASSWORD = '6androemda9'
+MAIL_PASSWORD = '6androemda9	'
 
 store = DictStore()
 
@@ -815,7 +815,9 @@ def route_mailtest():
 	msg = Message("Hello charles",
                   sender="charles@roundtableforums.net",
                   recipients=["charles4@email.arizona.edu"])
-	mail.send(msg)
+	#mail.send(msg)
+
+	return str(msg)
 
 
 def presets():
