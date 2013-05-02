@@ -703,7 +703,7 @@ def route_home_admin_teachers():
 				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
 
 				msg = Message(content,
-                  sender="invite@roundtableforums.net",
+                  sender="charles@roundtableforums.net",
                   recipients=[email])
 				mail.send(msg)
 
