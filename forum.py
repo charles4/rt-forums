@@ -817,9 +817,9 @@ def route_mailtest():
 	msg = Message("Hello charles",
                   sender="charles@roundtableforums.net",
                   recipients=["charles4@email.arizona.edu"])
-	#mail.send(msg)
+	mail.send(msg)
 
-	return "hello world"
+	return str(msg)
 
 
 def presets():
