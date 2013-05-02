@@ -15,6 +15,10 @@ import random
 from simplekv.memory import DictStore
 from flaskext.kvsession import KVSessionExtension
 
+### email
+from flask_mail import Mail
+
+
 store = DictStore()
 
 
@@ -25,6 +29,7 @@ app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18
 
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
+mail = Mail(app)
 
 # this will replace the app's session handling
 KVSessionExtension(store, app)
@@ -265,6 +270,10 @@ def createGrades(school):
 	db.session.add(Grade("Sixth Grade", 6, school))
 	db.session.add(Grade("Seventh Grade", 7, school))
 	db.session.add(Grade("Eighth Grade", 8, school))
+	db.session.add(Grade("Ninth Grade", 9, school))
+	db.session.add(Grade("Tenth Grade", 10, school))
+	db.session.add(Grade("Eleventh Grade", 11, school))
+	db.session.add(Grade("Twelfth Grade", 12, school))
 
 	try:
 		db.session.commit()
@@ -798,6 +807,14 @@ def route_home_admin_students():
 		s_by_g.append(GradeBag(grade=grade))
 	
 	return render_template("template_admin_students.html", students_by_grade=s_by_g)
+
+@app.route("/mailtest")
+@methodTimer
+def route_mailtest():
+	msg = Message("Hello charles",
+                  sender="charles@roundtableforums.net",
+                  recipients=["charles4@email.arizona.edu"])
+	mail.send(msg)
 
 
 def presets():
