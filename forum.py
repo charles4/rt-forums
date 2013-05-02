@@ -812,9 +812,9 @@ def route_home_admin_students():
 @app.route("/mailtest")
 @methodTimer
 def route_mailtest():
-	#msg = Message("Hello charles",
-    #              sender="charles@roundtableforums.net",
-    #              recipients=["charles4@email.arizona.edu"])
+	msg = Message("Hello charles",
+                  sender="charles@roundtableforums.net",
+                  recipients=["charles4@email.arizona.edu"])
 	#mail.send(msg)
 
 	return "hello world"
