@@ -3,8 +3,6 @@
 <head>
     {% block head %}
     <title>{% block title %}{% endblock %}</title>
-    <script src='/static/jquery.1.9.js'></script>
-    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.css'>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.css'>
     {% endblock %}
@@ -28,15 +26,25 @@
             right:0px;
             top:0px;
         }
+        .fixed-top a{
+            color:black;
+        }
+        .fixed-top ul {
+            background-color: white;
+            border-bottom: solid black 1px;
+        }
         .margin-top{
             margin-top: 50px;
+        }
+        .footer{
+            margin-top:200px;
         }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class='fixed-top'>
-                {% block breadcrumbs %}{% endblock %}
+               {% block breadcrumbs %}{% endblock %}
         </div>
 
         <div class='row-fluid margin-top'>

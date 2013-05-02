@@ -23,14 +23,22 @@
 {% endblock %}
 {% block content %}
 
-	<div class='row'>
-		<div class='span10'>
 			<h3>{{ post.title }} <small>by {{ post.author.firstname }} {{ post.author.lastname }} about <a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}'>{{ post.student.firstname }} {{ post.student.lastname }}</a>.</small></h3>
 			<ul class='no-dots'>
 			{% for comment in comments %}
 				<li>
-					<h5> {{ comment.author.firstname }} {{ comment.author.lastname }} <small> wrote at {{ comment.created }}</small></h5>
-					{{ comment.content }}
+					<h5> 
+						{{ comment.author.firstname }} {{ comment.author.lastname }} 
+						<small> wrote at {{ comment.created }}
+						{% if comment.author.id == session.user.id %}
+							<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{ comment.id }}/edit'>Edit</a>
+						{% endif %}
+						</small>
+					</h5>
+					{% for line in comment.content.splitlines() %}
+						{{ line }}<br>
+					{% endfor %}
+
 				</li>
 			{% else %}
 				<li>There are no comments</li>
@@ -43,6 +51,5 @@
 					</form>
 				</li>
 			</ul>
-		</div>
-	</div>
+
 {% endblock %}	
