@@ -17,6 +17,8 @@ from flaskext.kvsession import KVSessionExtension
 
 ### email
 from flask_mail import Mail
+from flask_mail import Message
+
 MAIL_USERNAME = 'charles'
 MAIL_PASSWORD = '6androemda9	'
 
