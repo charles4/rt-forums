@@ -15,14 +15,11 @@ import random
 from simplekv.memory import DictStore
 from flaskext.kvsession import KVSessionExtension
 
+store = DictStore()
+
 ### email
 from flask_mail import Mail
 from flask_mail import Message
-
-MAIL_USERNAME = 'charles'
-MAIL_PASSWORD = '6androemda9	'
-
-store = DictStore()
 
 
 app = Flask(__name__)
@@ -703,6 +700,12 @@ def route_home_admin_teachers():
 				### send email invite
 				### a partial teacher object is added so that permissions can be assigned
 				### without waiting for the teacher to accept the invite
+				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
+
+				msg = Message(content,
+                  sender="charles@roundtableforums.net",
+                  recipients=["charles4@email.arizona.edu"])
+				mail.send(msg)
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 	return render_template("template_admin_teachers.html", teachers=teachers)
@@ -815,7 +818,7 @@ def route_home_admin_students():
 @methodTimer
 def route_mailtest():
 	msg = Message("Hello charles",
-                  sender="charles@roundtableforums.net",
+                  sender="invite@roundtableforums.net",
                   recipients=["charles4@email.arizona.edu"])
 	mail.send(msg)
 
