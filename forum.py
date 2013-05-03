@@ -702,7 +702,7 @@ def route_home_admin_teachers():
 				### without waiting for the teacher to accept the invite
 				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
 
-				msg = Message("an invite.",
+				msg = Message(str(content),
                   sender="invite@roundtableforums.net",
                   recipients=[email])
 				mail.send(msg)
