@@ -701,8 +701,8 @@ def route_home_admin_teachers():
 				### a partial teacher object is added so that permissions can be assigned
 				### without waiting for the teacher to accept the invite
 				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
-
-				msg = Message(str(content),
+				print content
+				msg = Message(content,
                   sender="invite@roundtableforums.net",
                   recipients=[email])
 				mail.send(msg)
