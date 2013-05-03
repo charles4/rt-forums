@@ -7,6 +7,9 @@
 		.form{
 			width:100%;
 		}
+		.light-background{
+			background-color: rgb(255,222,222);
+		}
 	</style>
 {% endblock %}
 
@@ -22,6 +25,10 @@
 {% endblock %}
 {% block content %}
 
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
+
 	<h4>Invite</h4>
 	<form method="POST">
 		<label for="teachers">Enter the emails of teachers you would like to invite.</label>
@@ -32,7 +39,7 @@
 	<h4>Manage</h4>
 	<ul>
 		{% for teacher in teachers %}
-			<li class='no-dots'>
+			<li class='no-dots light-background'>
 				<legend><a href='/home/admin/teachers/{{ teacher.id }}'><h4>{{ teacher.email }}</a> <small>{{ teacher.lastname }}, {{ teacher.firstname }}</small></h4></legend>
 				<form method="POST" action='/home/admin/teachers/resend/'>
 					<input type='hidden' name='teacher_id' value="{{ teacher.id }}"></input>
