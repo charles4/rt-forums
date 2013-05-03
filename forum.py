@@ -698,6 +698,10 @@ def route_home_admin_teachers():
 		if request.form["teachers"]:
 			emails = request.form['teachers'].split(",")
 			for email in emails:
+				## strip whitespace
+				email = email.strip()
+				### validate email
+
 				### check if email already exists in db
 				check = Teacher.query.filter_by(email=email).first()
 				if check:
