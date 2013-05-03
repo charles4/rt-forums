@@ -64,12 +64,13 @@ class Teacher(db.Model):
 	created = db.Column(db.DateTime)
 	secretquestion = db.Column(db.String(256))
 	secretanswer = db.Column(db.String(256))
+	onetimekey = db.Column(db.String(64))
 
 	### db relationships
 	school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
 	school = db.relationship('School', backref=db.backref('teachers', lazy='dynamic'))
 
-	def __init__(self, email=None, school=None, firstname=None, lastname=None, password=None, secretquestion=None, secretanswer=None, isAdmin=False, create_date=None):
+	def __init__(self, email=None, school=None, key=None, firstname=None, lastname=None, password=None, secretquestion=None, secretanswer=None, isAdmin=False, create_date=None):
 		self.firstname = firstname
 		self.lastname = lastname
 		self.email = email
@@ -81,6 +82,7 @@ class Teacher(db.Model):
 		self.school = school
 		self.secretquestion = secretquestion
 		self.secretanswer = secretanswer
+		self.onetimekey = key
 
 
 	def __repr__(self):
@@ -687,8 +689,13 @@ def route_home_admin_teachers():
 		if request.form["teachers"]:
 			emails = request.form['teachers'].split(",")
 			for email in emails:
+				### generate onetime unique key
+				base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
+				salt = ''.join(random.sample(base, len(base)))
+				key = hashlib.sha256(salt).hexdigest()
+
 				school = School.query.filter_by(id=session['user'].school_id).first()
-				t = Teacher(email=email, school=school, password="123")
+				t = Teacher(email=email, school=school, password="123", key=key)
 				db.session.add(t)
 				try:
 					db.session.commit()
@@ -697,14 +704,19 @@ def route_home_admin_teachers():
 					return render_template("template_admin_teachers.html", teachers=teachers)
 
 				### after adding the initial teacher object to db
-				### send email invite
+				### send email invite with unique key
 				### a partial teacher object is added so that permissions can be assigned
 				### without waiting for the teacher to accept the invite
-				content = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
-				print content
-				msg = Message(content,
+				subjectline = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
+
+				msg = Message(subjectline,
                   sender="invite@roundtableforums.net",
                   recipients=[email])
+				msg.body = """
+					Go to the following address to create your account:
+					http://roundtableforums.net/invite/%s/?key=%s
+				""" % (t.email, t.onetimekey)
+
 				mail.send(msg)
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
