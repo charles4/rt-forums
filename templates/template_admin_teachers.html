@@ -32,7 +32,18 @@
 	<h4>Manage</h4>
 	<ul>
 		{% for teacher in teachers %}
-			<li><a href='/home/admin/teachers/{{ teacher.id }}'>{{ teacher.email }}: {{ teacher.lastname }}, {{ teacher.firstname }}</a></li>
+			<li class='no-dots'>
+				<legend><a href='/home/admin/teachers/{{ teacher.id }}'><h4>{{ teacher.email }}</a> <small>{{ teacher.lastname }}, {{ teacher.firstname }}</small></h4></legend>
+				<form method="POST" action='/home/admin/teachers/resend/'>
+					<input type='hidden' name='teacher_id' value="{{ teacher.id }}"></input>
+					<button class='btn'>Resend Invite</button>
+				</form>				
+				<form method='POST' action='/home/admin/teachers/delete/'>
+					<input type='hidden' name="teacher_id" value="{{ teacher.id }}"></input>
+					<button class='btn'>Delete {{ teacher.email }}</button>
+				</form>
+
+			</li>
 		{% else %}
 			<li>No teachers found</li>
 		{% endfor %}

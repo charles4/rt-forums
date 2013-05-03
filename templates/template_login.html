@@ -31,31 +31,38 @@
 
 	{% block content %}
     <div class='row'>
-    	<form method='POST'>
-    		<legend><h2>Round Table Forums [Beta Test] <small>Login Page</small></h2></legend>
+        <legend><h2>Round Table Forums [Beta Test] <small>Login Page</small></h2></legend>
+        <div class='span3'>
+        	<form method='POST'>
+        		
 
-                {% block messages %}
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            <ul class="flashes no-dots error">
-                            {% for message in messages %}
-                                <li> {{ message }}</li>
-                            {% endfor %}
-                        </ul>
-                        {% endif %}
-                    {% endwith %}
-                {% endblock %}
+                    {% block messages %}
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <ul class="flashes no-dots error">
+                                {% for message in messages %}
+                                    <li> {{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        {% endwith %}
+                    {% endblock %}
 
-            <div class='span3'>
-    		<label for="email">Your Email Address:</label>
-    		<input type="email" name="email"></input>
-    		
-    		<label for="password">Password:</label>
-    		<input type="password" name="password"></input>
+        		<label for="email">Your Email Address:</label>
+        		<input type="email" name="email"></input>
+        		
+        		<label for="password">Password:</label>
+        		<input type="password" name="password"></input>
 
-    		<button class='btn'>Login</button>
-            </div>
-    	</form>
+        		<button class='btn'>Login</button>
+
+
+
+        	</form>
+            
+                <span id="cdSiteSeal2"><script type="text/javascript" src="//tracedseals.starfieldtech.com/siteseal/get?scriptId=cdSiteSeal2&amp;cdSealType=Seal2&amp;sealId=55e4ye7y7mb7309fc281e14f5fa2345bm9y7mb7355e4ye76d475e883928e63de"></script></span>
+                
+        </div>
         <div class='span3'>
             <h4>Don't have an account?</h4>
             <p>Sign up <a href="/signup">here</a>.</p>
@@ -63,7 +70,7 @@
             <p>Reset it <a href="/passwordreset">here</a>.</p>
         </div>
         <div class='span6'>
-            <h4>What is RoundTableForums.net?</h4>
+            <h4>What? Why?</h4>
             <p>Round Table Forums is a site that allows you to create a forum for your school that allows your teachers to discuss and share information about their students.</p>
             <p>It makes it easy to manage students by creating a forum for each one and grouping them by grade.</p>
             <p>It allows you to graduate students from year to year, moving up between the grades. That way your second grade teacher will always have access to the students in the second grade, without having to redo forum settings and permissions each year.</p>
@@ -80,5 +87,11 @@
         </div>
     </div>
 	{% endblock %}
+
+    <div class='container footer'>
+        {% block footer %}
+
+        {% endblock %}
+    </div>
 
 </body>

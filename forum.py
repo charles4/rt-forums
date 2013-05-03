@@ -454,7 +454,7 @@ def route_register():
 def route_invited_signup(email):
 	#### check if valid email
 	t = Teacher.query.filter_by(email=email).first()
-	
+
 	if not t:
 		abort(404)
 
@@ -698,6 +698,12 @@ def route_home_admin_teachers():
 		if request.form["teachers"]:
 			emails = request.form['teachers'].split(",")
 			for email in emails:
+				### check if email already exists in db
+				check = Teacher.query.filter_by(email=email).first()
+				if check:
+					flash("That email has already been used.")
+					return render_template("template_admin_teachers.html",teachers=teachers)
+
 				### generate onetime unique key
 				base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
 				salt = ''.join(random.sample(base, len(base)))
@@ -730,6 +736,44 @@ def route_home_admin_teachers():
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 	return render_template("template_admin_teachers.html", teachers=teachers)
+
+@app.route("/home/admin/teachers/delete/", methods=['POST'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers_delete():
+	### check teacher exists
+	t = Teacher.query.filter_by(id=request.form['teacher_id'])
+	if not t:
+		abort(404)
+
+	db.session.delete(t)
+	db.session.commit()
+
+	flash("%s has been deleted." % t.email )
+	return redirect(url_for("route_home_admin_teachers"))
+
+@app.route("/home/admin/teachers/resend/", methods=['POST'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers_resend():
+	t = Teacher.query.filter_by(id=request.form['teacher_id']).first()
+
+	subjectline = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
+
+	msg = Message(subjectline,
+      sender="invite@roundtableforums.net",
+      recipients=[t.email])
+	msg.body = """
+		Go to the following address to create your account:
+		https://roundtableforums.net/invite/%s/?key=%s
+	""" % (t.email, t.onetimekey)
+
+	mail.send(msg)
+
+	flash("An invite for %s has been sent. " % t.email )
+	return redirect(url_for("route_home_admin_teachers"))
 
 @app.route("/home/admin/teachers/<teacher_id>/", methods=['POST', 'GET'])
 @methodTimer
