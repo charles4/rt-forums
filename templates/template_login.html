@@ -32,7 +32,7 @@
 	{% block content %}
     <div class='row'>
     	<form method='POST'>
-    		<legend><h2>Round Table Forums <small>Login</small></h2></legend>
+    		<legend><h2>Round Table Forums [Beta Test] <small>Login Page</small></h2></legend>
 
                 {% block messages %}
                     {% with messages = get_flashed_messages() %}
@@ -56,11 +56,27 @@
     		<button class='btn'>Login</button>
             </div>
     	</form>
-        <div class='span9'>
+        <div class='span3'>
             <h4>Don't have an account?</h4>
             <p>Sign up <a href="/signup">here</a>.</p>
             <h4>Forgot your password?</h4>
             <p>Reset it <a href="/passwordreset">here</a>.</p>
+        </div>
+        <div class='span6'>
+            <h4>What is RoundTableForums.net?</h4>
+            <p>Round Table Forums is a site that allows you to create a forum for your school that allows your teachers to discuss and share information about their students.</p>
+            <p>It makes it easy to manage students by creating a forum for each one and grouping them by grade.</p>
+            <p>It allows you to graduate students from year to year, moving up between the grades. That way your second grade teacher will always have access to the students in the second grade, without having to redo forum settings and permissions each year.</p>
+            <p>Round Table Forums makes retention of information about students easy. If your fourth grade teacher makes a post noting that a student learns best when working on their own, the fifth grade teacher will have access to that information the next year when the student is in the fifth grade.</p>
+            <p>Round Table Forums makes it easy to grant and manage permissions, so you can ensure each teacher only has access to information about the students they work with.</p>
+            <h4>Security?</h4>
+            <p>Round Table Forums is only accessible over SSL, only stores <a href="http://bcrypt.sourceforge.net/">bcrypt</a> hashed copies of passwords and is hosted on virtual servers out of <a href="http://digitalocean.com">DigitalOcean</a>.</p>
+            <h4>Beta?</h4>
+            <p>Right now Round Table Forums is free to use, since it is unstable, slow and all around wonky. Eventually I would like to turn it into a paid service, with accounts who participated in the beta being charged something like $5 per month instead of $10.</p>
+            <p>I will make my best effort to preserve and ensure the integrity of any information stored on the Round Table Forum system throughout the beta.</p>
+            <h4>Touching Base</h4>
+            <p>Being that I am the sole author of this program and it can get lonely being locked in a dark room with a computer, I would love to hear any feedback, requests or thoughts you might have.</p>
+            <p>I can be reached most easily at my university account <b>charles4@email.arizona.edu</b></p>
         </div>
     </div>
 	{% endblock %}

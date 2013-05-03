@@ -39,6 +39,10 @@
         .footer{
             margin-top:200px;
         }
+        .wordbreak{
+            word-wrap:break-word;
+            word-break:hyphenate;
+        }
     </style>
 </head>
 <body>
@@ -52,7 +56,7 @@
                 <ul class="nav nav-pills nav-stacked">
                     <li class='disabled'><a href='/home'><h4>{{ session.school.schoolname }}</a></h4></li>
                     <li class='disabled'><a href='#'>{{ session.user.firstname }} {{ session.user.lastname }}</a></li>
-                    <li class='disabled'><a href='#'>{{ session.user.email }}</a></li>
+                    <li class='disabled wordbreak'><a href='#'>{{ session.user.email }}</a></li>
                     <li><a href='/home'><b>Home</b></a></li>
                     {% if session.user.isAdmin == "1" %}
                         <li><a href='/home/admin'><b>Admin</b></a></li>
@@ -69,7 +73,7 @@
                                 {% if messages %}
                                     <ul class="flashes no-dots error" >
                                     {% for message in messages %}
-                                        <li>{{ message }}</li>
+                                        <li>System Message: {{ message }}</li>
                                     {% endfor %}
                                 </ul>
                                 {% endif %}

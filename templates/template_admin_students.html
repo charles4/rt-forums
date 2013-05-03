@@ -18,18 +18,25 @@
 {% endblock %}
 
 {% block content %}
+	
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
 
-	<h4>Add students here</h4>
+	<legend><h4>Graduate Students</h4></legend>
+	<p>This will graduate all students to the next respective grade level.</p>
+	<p>All students leaving twelfth grade will be placed into a general grade called "Graduated"</p>
+	<form method="POST" action="/home/admin/students/graduate/">
+		<button class='btn'>Graduate Now</button>
+	</form>
+
+	<legend><h4>Add students here</h4></legend>
 	<p>Use format: "Lastname Firstname Grade, Lastname Firstname Grade, ..."</p>
 	<p>ex. "Bond James 5, Duck Donald 2, ..."
 	<form method="POST">
 		<textarea name="students" class='form'></textarea>
 		<button class='btn'>Create</button>
 	</form>
-
-	{% block messages %}
-		{{ super() }}
-	{% endblock %}
 
 	{% for grade in students_by_grade %}
 		<b> {{ grade.grade.name }} </b>

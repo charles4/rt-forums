@@ -276,7 +276,7 @@ def createGrades(school):
 	db.session.add(Grade("Tenth Grade", 10, school))
 	db.session.add(Grade("Eleventh Grade", 11, school))
 	db.session.add(Grade("Twelfth Grade", 12, school))
-
+	db.session.add(Grade("Graduated", 13, school))
 	try:
 		db.session.commit()
 	except exc.SQLAlchemyError, e:
@@ -454,10 +454,19 @@ def route_register():
 def route_invited_signup(email):
 	#### check if valid email
 	t = Teacher.query.filter_by(email=email).first()
-	print email
+	
 	if not t:
-		print "t is none"
 		abort(404)
+
+	if not t.onetimekey:
+		abort(404)
+
+	if not request.args.get("key"):
+		abort(404)
+
+	if request.args.get("key") != t.onetimekey:
+		abort(401)
+
 
 	#### add verification of invite ####
 
@@ -825,6 +834,29 @@ def route_home_admin_students():
 		s_by_g.append(GradeBag(grade=grade))
 	
 	return render_template("template_admin_students.html", students_by_grade=s_by_g)
+
+@app.route("/home/admin/students/graduate/", methods=['POST'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_students_graduate():
+	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
+	for grade in grades:
+		if grade.numeric_repr < 13:
+			new_grade_repr = grade.numeric_repr + 1
+		else:
+			new_grade_repr = grade.numeric_repr
+
+		students = grade.students.all()
+		for student in students:
+			db.session.add(student)
+			student.grade = Grade.query.filter_by(numeric_repr=new_grade_repr).first()
+			student.grade_id = student.grade.id
+
+	db.session.commit()
+
+	flash("All students have been graduated to the next grade level.")
+	return redirect(url_for("route_home_admin_students"))
 
 @app.route("/mailtest")
 @methodTimer
