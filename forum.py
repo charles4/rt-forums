@@ -230,7 +230,7 @@ def requireLogin(fn):
 	def decorated(*args, **kwargs):
 		if 'user' in session:
 			return fn(*args, **kwargs)
-		return redirect(url_for("route_login", _secure=True))
+		return redirect(url_for("route_login"))
 	return decorated
 
 def requireAdmin(fn):
@@ -254,7 +254,7 @@ def requirePermission(fn):
 			if str(token.student_id) == str(kwargs["student_id"]):
 				return fn(*args, **kwargs)
 		flash("You don't have permission to view the forum belonging to that student. Your school's admin can fix that.")
-		return redirect(url_for("route_home_grade", grade=kwargs["grade"], _secure=True))
+		return redirect(url_for("route_home_grade", grade=kwargs["grade"]))
 	return decorated
 
 ### General Methods ###
@@ -295,7 +295,7 @@ def route_login():
 				session['grades'] = Grade.query.filter_by(school_id=session['user'].school_id).all()
 				session['school'] = School.query.filter_by(id=session['user'].school_id).first()
 				print session['school']
-				return redirect(url_for('route_home', _secure=True))
+				return redirect(url_for('route_home'))
 
 			else:
 				flash('You entered an incorrect password.')
@@ -308,12 +308,12 @@ def route_login():
 
 @app.route("/login/")
 def route_login_redirect():
-	return redirect(url_for("route_login", _secure=True))
+	return redirect(url_for("route_login"))
 
 @app.route("/logout/")
 def route_logout():
 	logout()
-	return redirect(url_for('route_login', _secure=True))
+	return redirect(url_for('route_login'))
 
 @app.route("/passwordreset/", methods=['GET'])
 def route_passwordreset_step1():
@@ -339,9 +339,9 @@ def route_passwordreset_step2():
 					return render_template("template_resetpassword_step2.html", email=request.form['email'], secret_key=session['skey'])
 				else:
 					flash("The email you entered does not appear to belong to an Round Table Forum account.")
-					return redirect(url_for("route_passwordreset_step1", _secure=True))
+					return redirect(url_for("route_passwordreset_step1"))
 
-	return redirect(url_for("route_passwordreset_step1", _secure=True))
+	return redirect(url_for("route_passwordreset_step1"))
 
 @app.route("/passwordreset/step3/", methods=['GET', 'POST'])
 def route_passwordreset_step3():
@@ -354,7 +354,7 @@ def route_passwordreset_step3():
 					if request.form["code"] == "123":
 						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code='123')
 
-	return redirect(url_for("route_passwordreset_step1", _secure=True))
+	return redirect(url_for("route_passwordreset_step1"))
 
 @app.route("/passwordreset/process/", methods=['POST'])
 def route_password_reset_process():
@@ -369,14 +369,14 @@ def route_password_reset_process():
 						t.phash = bcrypt.generate_password_hash(request.form['password1'], 14)
 						db.session.commit()
 
-						return redirect(url_for("route_login", _secure=True))
+						return redirect(url_for("route_login"))
 
 					else:
 						flash("The confirm password line did not match the first password line.")
 						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code='123')
 
 	flash("There was a problem changing your password.")
-	return redirect(url_for("route_passwordreset_step3", _secure=True))
+	return redirect(url_for("route_passwordreset_step3"))
 
 
 @app.route("/signup/", methods=['GET', 'POST'])
@@ -445,7 +445,7 @@ def route_register():
 		user = Teacher.query.filter_by(email=t.email).first()
 		session['user'] = user
 		session['school'] = School.query.filter_by(id=s.id).first()
-		return redirect(url_for('route_home', _secure=True))
+		return redirect(url_for('route_home'))
 
 	return render_template("template_registration.html")
 
@@ -507,7 +507,7 @@ def route_invited_signup(email):
 		user = Teacher.query.filter_by(email=t.email).first()
 		session['user'] = user
 		session['school'] = School.query.filter_by(id=s.id).first()
-		return redirect(url_for('route_home', _secure=True))
+		return redirect(url_for('route_home'))
 
 
 	return render_template("template_invited_user_registration.html", emailaddress=email)
@@ -640,7 +640,7 @@ def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comme
 			flash("There was an error editing your comment: " + str(e))
 			return render_template("template_home_grade_student_post_comment.html", comment=c)
 
-		return redirect(url_for("route_home_grade_student_post", grade=grade, student_id=student_id, post_id=post_id, _secure=True))
+		return redirect(url_for("route_home_grade_student_post", grade=grade, student_id=student_id, post_id=post_id))
 
 	return render_template("template_home_grade_student_post_comment.html", comment=c, student=s, post=p)
 
@@ -675,7 +675,7 @@ def route_home_grade_student_compose(grade, student_id):
 			return render_template("template_home_grade_student_compose.html", student=s)
 
 
-		return redirect(url_for('route_home_grade_student', grade=grade, student_id=student_id, _secure=True))
+		return redirect(url_for('route_home_grade_student', grade=grade, student_id=student_id))
 
 	return render_template("template_home_grade_student_compose.html", student=s)
 
@@ -755,7 +755,7 @@ def route_home_admin_teachers_delete():
 	db.session.commit()
 
 	flash("%s has been deleted." % t.email )
-	return redirect(url_for("route_home_admin_teachers", _secure=True))
+	return redirect(url_for("route_home_admin_teachers"))
 
 @app.route("/home/admin/teachers/resend/", methods=['POST'])
 @methodTimer
@@ -777,7 +777,7 @@ def route_home_admin_teachers_resend():
 	mail.send(msg)
 
 	flash("An invite for %s has been sent. " % t.email )
-	return redirect(url_for("route_home_admin_teachers", _secure=True))
+	return redirect(url_for("route_home_admin_teachers"))
 
 @app.route("/home/admin/teachers/<teacher_id>/", methods=['POST', 'GET'])
 @methodTimer
@@ -904,7 +904,7 @@ def route_home_admin_students_graduate():
 	db.session.commit()
 
 	flash("All students have been graduated to the next grade level.")
-	return redirect(url_for("route_home_admin_students", _secure=True))
+	return redirect(url_for("route_home_admin_students"))
 
 @app.route("/mailtest")
 @methodTimer
