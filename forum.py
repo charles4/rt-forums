@@ -743,7 +743,7 @@ def route_home_admin_teachers():
 @requireAdmin
 def route_home_admin_teachers_delete():
 	### check teacher exists
-	t = Teacher.query.filter_by(id=request.form['teacher_id'])
+	t = Teacher.query.filter_by(id=request.form['teacher_id']).first()
 	if not t:
 		abort(404)
 
