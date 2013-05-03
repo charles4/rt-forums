@@ -287,7 +287,7 @@ def createGrades(school):
 def route_login():
 	if request.method == "POST":
 		user = Teacher.query.filter_by(email=request.form['email']).first()
-		if user:
+		if user != None:
 			if bcrypt.check_password_hash(user.phash, request.form['password']):
 				session['user'] = user
 				session['grades'] = Grade.query.filter_by(school_id=session['user'].school_id).all()
