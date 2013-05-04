@@ -1060,7 +1060,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	#presets()
+	presets()
 
 	app.debug = True
 	app.run()
