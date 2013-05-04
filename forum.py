@@ -6,6 +6,7 @@ from sqlalchemy import exc
 
 from functools import wraps
 import time
+import calendar
 from datetime import datetime
 
 import hashlib
@@ -281,6 +282,27 @@ def createGrades(school):
 		db.session.commit()
 	except exc.SQLAlchemyError, e:
 		print str(e)
+
+
+def levenshtein(s1, s2):
+	if len(s1) < len(s2):
+		return levenshtein(s2, s1)
+
+	# len(s1) >= len(s2)
+	if len(s2) == 0:	
+		return len(s1)
+
+	previous_row = xrange(len(s2) + 1)
+	for i, c1 in enumerate(s1):
+		current_row = [i + 1]
+		for j, c2 in enumerate(s2):
+			insertions = previous_row[j + 1] + 1 # j+1 instead of j since previous_row and current_row are one character longer
+			deletions = current_row[j] + 1       # than s2
+			substitutions = previous_row[j] + (c1 != c2)
+			current_row.append(min(insertions, deletions, substitutions))
+		previous_row = current_row
+
+	return previous_row[-1]
 
 
 ### routes ###
@@ -906,6 +928,118 @@ def route_home_admin_students_graduate():
 	flash("All students have been graduated to the next grade level.")
 	return redirect(url_for("route_home_admin_students"))
 
+@app.route("/home/search/", methods=['GET'])
+@methodTimer
+@requireLogin
+def route_home_search():
+	### take levenshtein of keyword string "stupid kids suck" and each post title, comment and student (name)
+	### rank results by levenshtein
+
+	keywords = request.args.get("keywords")
+	teacher = Teacher.query.filter_by(id=session['user'].id).first()
+
+	## fetch all students teacher has access to
+	tokens = teacher.tokens.all()
+	ids = []
+	for t in tokens:
+		ids.append(t.student_id)
+
+	students = Student.query.filter(Student.id.in_(ids)).all()
+
+	## now fetch all posts about those students
+	posts = Post.query.filter(Post.student_id.in_(ids)).all()
+
+	### now fetch all comments from those posts
+	comments = []
+	for post in posts:
+		coms = Comment.query.filter_by(post=post).all()
+		for com in coms:
+			comments.append(com)
+
+	### now loop through all text, levenshtein each word
+
+	class Result(object):
+		def __init__(self, score, representation, address, date=None):
+			self.score = score
+			self.repr = representation
+			self.address = address
+			self.date = date
+
+	results = []
+	for student in students:
+		myscore = 0.0
+		for keyword in keywords.split():
+			lowest_lev_result = 10000
+
+			text = student.firstname + " " + student.lastname
+
+			for word in text.split():
+				lev_result = levenshtein(keyword, word) + .1  ## to avoid zero
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+			
+			myscore += lowest_lev_result
+
+		_repr = student.lastname + ", " + student.firstname	
+		address  = "/home/%s/%s/" % (student.grade.name, student.id)
+
+		## adjust final score by date
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(student.created.timetuple())
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		myscore = myscore * (ratio + 1)
+			
+		results.append(Result(myscore, _repr, address))
+
+	for post in posts:
+		myscore = 0.0
+		for keyword in keywords.split():
+			lowest_lev_result = 10000
+
+			for word in post.title.split():
+				lev_result = levenshtein(keyword, word) + .1
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+
+			myscore += lowest_lev_result
+
+		address = "/home/%s/%s/%s/" % (post.student.grade.name, post.student.id, post.id)
+		_repr = post.title
+		
+
+		## adjust final score by date
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(post.created.timetuple())
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		myscore = myscore * (ratio + 1)
+			
+		results.append(Result(myscore, _repr, address))
+
+	for comment in comments:
+		myscore = 0.0
+		for keyword in keywords.split():
+			lowest_lev_result = 10000
+
+			for word in comment.content.split():
+				lev_result = levenshtein(keyword, word) + .1
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+			myscore += lowest_lev_result
+
+		address = "/home/%s/%s/%s/" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id)
+		_repr = comment.content
+
+		## adjust final score by date
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(comment.created.timetuple())
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		myscore = myscore * (ratio + 1)
+			
+		results.append(Result(myscore, _repr, address))
+
+
+	return render_template("template_home_search.html", results=sorted(results, key=lambda result:result.score))
+
 @app.route("/mailtest")
 @methodTimer
 def route_mailtest():
@@ -924,7 +1058,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	presets()
+	#presets()
 
 	app.debug = True
 	app.run()
