@@ -13,10 +13,12 @@ import hashlib
 import random
 
 #### session management stuff
-from simplekv.memory import DictStore
+import redis
+from simplekv.memory.redisstore import RedisStore
+#from simplekv.memory import DictStore
 from flaskext.kvsession import KVSessionExtension
 
-store = DictStore()
+store = RedisStore(redis.StrictRedis(host='roundtableforums.net', port=7555, db=0))
 
 ### email
 from flask_mail import Mail
