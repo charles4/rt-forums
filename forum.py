@@ -802,7 +802,7 @@ def route_home_admin_teachers():
                   sender="invite@roundtableforums.net",
                   recipients=[email])
 				msg.body = """Go to the following address to create your account:
-				http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
+http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
 
 				mail.send(msg)
 
