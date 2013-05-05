@@ -366,7 +366,7 @@ def route_logout():
 @app.route("/passwordreset/", methods=['GET'])
 def route_passwordreset_step1():
 	### generate onetime unique key
-	base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
+	base = "abcdefghijklmnopqrstuvwxyz123456789"
 	salt = ''.join(random.sample(base, len(base)))
 	session['skey'] = hashlib.sha256(salt).hexdigest()
 
@@ -391,7 +391,7 @@ def route_passwordreset_step2():
 					msg = Message(subjectline,
 				      sender="password@roundtableforums.net",
 				      recipients=[address])
-					msg.body = """Your code is: %s """ % code
+					msg.body = """Your code is: %s""" % code
 
 					mail.send(msg)
 					### store email in session
@@ -801,10 +801,8 @@ def route_home_admin_teachers():
 				msg = Message(subjectline,
                   sender="invite@roundtableforums.net",
                   recipients=[email])
-				msg.body = """
-					Go to the following address to create your account:
-					http://roundtableforums.net/invite/%s/?key=%s
-				""" % (t.email, t.onetimekey)
+				msg.body = """Go to the following address to create your account:
+				http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
 
 				mail.send(msg)
 
