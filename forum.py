@@ -274,7 +274,7 @@ def requirePermission(fn):
 		for token in allowed:
 			if str(token.student_id) == str(kwargs["student_id"]):
 				return fn(*args, **kwargs)
-				
+
 		allowed = teacher.grade_tokens.all()
 		for token in allowed:
 			if str(token.grade.name) == str(kwargs["grade"]):
@@ -382,8 +382,21 @@ def route_passwordreset_step2():
 				t = Teacher.query.filter_by(email=request.form['email']).first()
 				if t != None:
 					### generate a code and email it to the user
+					base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
+					salt = ''.join(random.sample(base, len(base)))
+					subjectline = "Password reset code."
+					address = request.form['email']
+					code = hashlib.sha256(salt).hexdigest()[:5]
+
+					msg = Message(subjectline,
+				      sender="password@roundtableforums.net",
+				      recipients=[address])
+					msg.body = """Your code is: %s """ % code
+
+					mail.send(msg)
 					### store email in session
-					session['email_for_password_reset'] = request.form['email']
+					session['email_for_password_reset'] = address
+					session['password_reset_code'] = code
 					return render_template("template_resetpassword_step2.html", email=request.form['email'], secret_key=session['skey'])
 				else:
 					flash("The email you entered does not appear to belong to an Round Table Forum account.")
@@ -399,8 +412,8 @@ def route_passwordreset_step3():
 			if request.form['code']:
 				if request.form['secret_key'] == session['skey']:
 					#if request.form['code'] == session['code']:
-					if request.form["code"] == "123":
-						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code='123')
+					if request.form["code"] == session['password_reset_code']:
+						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code=session['password_reset_code'])
 
 	return redirect(url_for("route_passwordreset_step1"))
 
@@ -411,7 +424,7 @@ def route_password_reset_process():
 		if request.form['code']:
 			if request.form['secret_key'] == session['skey']:
 				#if request.form['code'] == session['code']:
-				if request.form["code"] == "123":
+				if request.form["code"] == session['password_reset_code']:
 					if request.form["password1"] == request.form["password2"]:
 						t = Teacher.query.filter_by(email=session['email_for_password_reset']).first()
 						t.phash = bcrypt.generate_password_hash(request.form['password1'], 14)
@@ -983,9 +996,17 @@ def route_home_search():
 
 	## fetch all students teacher has access to
 	tokens = teacher.tokens.all()
+	gradetokens = teacher.grade_tokens.all()
+
 	ids = []
 	for t in tokens:
 		ids.append(t.student_id)
+
+	for gradetoken in gradetokens:
+		students = gradetoken.grade.students.all()
+		for student in students:
+			if student.id not in ids:
+				ids.append(student.id)
 
 	students = Student.query.filter(Student.id.in_(ids)).all()
 
