@@ -1,5 +1,6 @@
 apt-get install python-dev
 apt-get install python-pip
+apt-get install libmysqlclient-dev
 
 pip install flask-bcrypt
 pip install flask-mail

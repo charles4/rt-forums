@@ -542,31 +542,26 @@ def route_invited_signup(email):
 @requireLogin
 def route_home():
 	unviewed = UnviewedComment.query.filter_by(teacher_id=session['user'].id).order_by(UnviewedComment.id.desc())
-	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
+	## fetch all students teacher has access to
+	tokens = PermissionToken.query.filter_by(teacher_id=session['user'].id).all()
+
+	ids = []
+	for t in tokens:
+		ids.append(t.student_id)
+
+	shown_unviewed = []
+	### only show unviewed comments on students teacher has access too
+	for uvcomment in unviewed:
+		if uvcomment.comment.post.student_id in ids:
+			shown_unviewed.append(uvcomment)
 
 	### only show grades that the user has students they are allowed to view in
 	shown_grades = []
-	for grade in grades:
-		show_grade = False
+	for token in tokens:
+		if token.student.grade not in shown_grades:
+			shown_grades.append(token.student.grade)
 
-		students = grade.students.all()
-		teacher = session['user']
-		db.session.add(teacher)
-		tokens = teacher.tokens.all()
-
-		allowed_ids = []
-		for t in tokens:
-			allowed_ids.append(t.student_id)
-
-		for student in students:
-			if student.id in allowed_ids:
-				show_grade = True
-				break
-
-		if show_grade == True:
-			shown_grades.append(grade)
-
-	return render_template("template_home.html", grades=shown_grades, unviewed=unviewed)
+	return render_template("template_home.html", grades=shown_grades, unviewed=shown_unviewed)
 
 
 @app.route("/home/<grade>/")
