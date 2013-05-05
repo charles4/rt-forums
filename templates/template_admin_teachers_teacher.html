@@ -29,20 +29,28 @@
 <table>
 	{% for grade in grades %}
 		<tr>
-			<td >{{ grade.grade.name }}</td>
+			<td ><h4>{{ grade.grade.name }}</h4></td>
 		</tr>
 		<tr>
-			<td></td><td><input type='checkbox' name='allowall-{{ grade.grade.id }}'></input><b>Allow Access to All Students in {{ grade.grade.name }}</b>
+			<td></td>
+			<td>
+				<label class='checkbox'>
+					<input type='checkbox' name='grade-{{ grade.grade.id }}' {% if grade.allowed %}checked{% endif %}></input>
+					<h5><b>Allow Access to all of {{ grade.grade.name }}</b></h5>
+				</label>
+			</td>
 		</tr>
 		{% for permission in grade.permissions %}
 			<tr>
 				<td></td>
-				<td>{% if permission.allowed %}
-						<input type='checkbox' name='student-{{ permission.student.id }}' checked></input>
-					{% else %}
-						<input type='checkbox' name='student-{{ permission.student.id }}'></input>
-					{% endif %}	
-				{{ permission.student.lastname }}, {{ permission.student.firstname }}
+				<td>
+					<label class='checkbox'>
+						<input type='checkbox' name='student-{{ permission.student.id }}' {% if permission.allowed %}checked{% endif %}></input>
+						{{ permission.student.lastname }}, {{ permission.student.firstname }} 
+						{% if grade.allowed %}
+							(Already allowed at grade level)
+						{% endif %}
+					</label>
 				</td>
 
 			</tr>

@@ -5,9 +5,7 @@
 	{{ super() }}
 {% endblock %}
 
-{% block messages %}
-	{{ super() }}
-{% endblock %}
+
 {% block breadcrumbs %}
 	<ul class="breadcrumb">
     <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
@@ -15,6 +13,9 @@
     </ul>
 {% endblock %}
 {% block content %}
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
 
 	<h3>{{ grade.name }} forums</h3>
 	<ul class='no-dots'>

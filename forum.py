@@ -217,6 +217,24 @@ class PermissionToken(db.Model):
 	def __repr__(self):
 		return "<PermissionToken %r>" % self.id
 
+class GradePermissionToken(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+
+	### relationships
+	grade_id = db.Column(db.Integer, db.ForeignKey('grade.id'))
+	grade = db.relationship('Grade', backref=db.backref("grade_tokens", lazy="dynamic"))
+
+	teacher_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
+	teacher = db.relationship('Teacher', backref=db.backref('grade_tokens', lazy='dynamic'))
+
+	def __init__(self, grade, teacher):
+		self.grade = grade
+		self.teacher = teacher
+
+	def __repr__(self):
+		return "<Grade Permission %r>" % self.id
+
+
 #### wrappers ####
 
 def methodTimer(function):
@@ -249,13 +267,19 @@ def requireAdmin(fn):
 def requirePermission(fn):
 	@wraps(fn)
 	def decorated(*args, **kwargs):
-		print kwargs
 		teacher = session['user']
 		db.session.add(teacher)
+
 		allowed = teacher.tokens.all()
 		for token in allowed:
 			if str(token.student_id) == str(kwargs["student_id"]):
 				return fn(*args, **kwargs)
+				
+		allowed = teacher.grade_tokens.all()
+		for token in allowed:
+			if str(token.grade.name) == str(kwargs["grade"]):
+				return fn(*args, **kwargs)
+
 		flash("You don't have permission to view the forum belonging to that student. Your school's admin can fix that.")
 		return redirect(url_for("route_home_grade", grade=kwargs["grade"]))
 	return decorated
@@ -544,15 +568,20 @@ def route_home():
 	unviewed = UnviewedComment.query.filter_by(teacher_id=session['user'].id).order_by(UnviewedComment.id.desc())
 	## fetch all students teacher has access to
 	tokens = PermissionToken.query.filter_by(teacher_id=session['user'].id).all()
+	gradetokens = GradePermissionToken.query.filter_by(teacher_id=session['user'].id).all()
 
 	ids = []
 	for t in tokens:
 		ids.append(t.student_id)
 
+	gids = []
+	for g in gradetokens:
+		gids.append(g.grade_id)
+
 	shown_unviewed = []
 	### only show unviewed comments on students teacher has access too
 	for uvcomment in unviewed:
-		if uvcomment.comment.post.student_id in ids:
+		if uvcomment.comment.post.student_id in ids or uvcomment.comment.post.student.grade_id in gids:
 			shown_unviewed.append(uvcomment)
 
 	### only show grades that the user has students they are allowed to view in
@@ -561,6 +590,11 @@ def route_home():
 		if token.student.grade not in shown_grades:
 			shown_grades.append(token.student.grade)
 
+	for gradetoken in gradetokens:
+		if gradetoken.grade not in shown_grades:
+			shown_grades.append(gradetoken.grade)
+
+	shown_grades = sorted(shown_grades, key=lambda grade:grade.id)
 	return render_template("template_home.html", grades=shown_grades, unviewed=shown_unviewed)
 
 
@@ -575,6 +609,10 @@ def route_home_grade(grade):
 	teacher = session['user']
 	db.session.add(teacher)
 	tokens = teacher.tokens.all()
+	gradetokens = teacher.grade_tokens.all()
+	allowed_grades = []
+	for token in gradetokens:
+		allowed_grades.append(token.grade)
 
 	list_of_allowed_student_ids = []
 	for token in tokens:
@@ -582,7 +620,7 @@ def route_home_grade(grade):
 
 	allowed_students = []
 	for student in students:
-		if student.id in list_of_allowed_student_ids:
+		if student.id in list_of_allowed_student_ids or student.grade in allowed_grades:
 			allowed_students.append(student)
 
 	### sort here to ensure something doesn't get misordered by for loops
@@ -814,29 +852,30 @@ def route_home_admin_teachers_teacher(teacher_id):
 		pts = teacher.tokens.all()
 		for p in pts:
 			db.session.delete(p)
+		gpts = teacher.grade_tokens.all()
+		for g in gpts:
+			db.session.delete(g)
+
 		db.session.commit()
 
 		### iterate through form
 		for entry in request.form:
 			splitted = entry.split("-")
-			if splitted[0] == "student":
-				studentid = splitted[1]
-				student = Student.query.filter_by(id=studentid).first()
-				token = PermissionToken(student=student, teacher=teacher)
-				db.session.add(token)
-				db.session.commit()
-
-			if splitted[0] == "allowall":
+			if splitted[0] == "grade":
 				### find all students in grade, create token for each one
 				gradeid = splitted[1]
-				students = Student.query.filter_by(grade_id=gradeid).all()
-				for student in students:
-					token = PermissionToken(student=student, teacher=teacher)
-					db.session.add(token)
-				db.session.commit()
+				grade = Grade.query.filter_by(id=gradeid).first()
+				token = GradePermissionToken(grade=grade, teacher=teacher)
+				db.session.add(token)
 
-		pts = teacher.tokens.all()
-
+			if splitted[0] == "student":
+				studentid = splitted[1]
+				student = Student.query.filter_by(id=studentid).first()				
+				token = PermissionToken(student=student, teacher=teacher)
+				db.session.add(token)
+			
+			db.session.commit()
+				# else, if a gradetoken exists, a individual token doesn't need to be created
 
 
 	### setup list of allowed/not allowed
@@ -845,7 +884,7 @@ def route_home_admin_teachers_teacher(teacher_id):
 			self.student=student
 			### determine if allowed or denied
 			token = PermissionToken.query.filter_by(student=student, teacher_id=teacher_id).first()
-			print str(token)
+
 			if token != None:
 				self.allowed = True
 			else:
@@ -854,6 +893,13 @@ def route_home_admin_teachers_teacher(teacher_id):
 	class GradeBag(object):
 		def __init__(self, grade, permissions):
 			self.grade = grade
+			### determine if grade is allowed or not
+			token = GradePermissionToken.query.filter_by(grade=grade, teacher_id=teacher_id).first()
+			if token != None:
+				self.allowed = True
+			else:
+				self.allowd = False
+
 			self.permissions = permissions
 
 
@@ -1052,10 +1098,27 @@ def presets():
 	db.drop_all()
 	db.create_all()
 
+	school = School("Demo Elementary School", "America")
+	db.session.add(school)
+	db.session.commit()
+
+	createGrades(school)
+
+	teacher = Teacher(email="demo@demo.com", school=school, key=None, firstname="Gandalf", lastname="Gray", password="demo", secretquestion=None, secretanswer=None, isAdmin=True, create_date=None)
+	db.session.add(teacher)
+	db.session.commit()
+
+	grade = Grade.query.filter_by(id=1).first()
+	db.session.add(Student(firstname="George", lastname="Washington", grade=grade))
+	db.session.add(Student(firstname="Abraham", lastname="Lincoln", grade=grade))
+	db.session.add(Student(firstname="Franklyn", lastname="Rosevelt", grade=grade))
+	db.session.add(Student(firstname="Richard", lastname="Nixon", grade=grade))
+	db.session.add(Student(firstname="Bill", lastname="Clinton", grade=grade))
+	db.session.commit()
 
 
 if __name__ == "__main__":
-	#presets()
+	presets()
 
 	app.debug = True
 	app.run()
