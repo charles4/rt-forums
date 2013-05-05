@@ -27,6 +27,8 @@
 	<ul class='no-dots'>
 		{% for grade in grades %}
 			<li><a href='/home/{{ grade.name }}'>{{ grade.name }} forums</a></li>
+		{% else %}
+			<li>You don't have access to any forums yet.</li>
 		{% endfor %}
 	</ul>
 

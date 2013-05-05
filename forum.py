@@ -26,7 +26,7 @@ from flask_mail import Message
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:PepperP0tts1@roundtableforums.net/roundtableforums_db'
 app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18\x8a|I\xf4U'
 
 
@@ -155,7 +155,7 @@ class Post(db.Model):
 class Comment(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	created = db.Column(db.DateTime)
-	content = db.Column(db.String)
+	content = db.Column(db.Text)
 
 	### relationships
 	author_id = db.Column(db.Integer, db.ForeignKey('teacher.id'))
@@ -1060,7 +1060,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	presets()
+	#presets()
 
 	app.debug = True
 	app.run()

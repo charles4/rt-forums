@@ -36,6 +36,9 @@
         .margin-top{
             margin-top: 50px;
         }
+        .margin-top-tiny{
+            margin-top: 10px;
+        }
         .footer{
             margin-top:200px;
         }
@@ -51,7 +54,7 @@
             <div class='span8'>
                {% block breadcrumbs %}{% endblock %}
             </div>
-            <div class="span4">
+            <div class="span4 margin-top-tiny">
                 <form method="GET" action="/home/search/" class='form-inline form-search'>
                     <input type="text" name='keywords'></input>
                     <button class='btn'>Search</button>
