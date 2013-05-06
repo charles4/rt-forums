@@ -5,9 +5,7 @@
 	{{ super() }}
 {% endblock %}
 
-{% block messages %}
-	{{ super() }}
-{% endblock %}
+
 {% block breadcrumbs %}
 	<ul class="breadcrumb">
 	<li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
@@ -17,15 +15,36 @@
 	</ul>
 {% endblock %}
 {% block content %}
-
-<h5>{{ teacher.lastname }}, {{ teacher.firstname }}</h5>
-<div>is an admin: {{ teacher.isAdmin }}</div>
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
+<h3>{{ teacher.lastname }}, {{ teacher.firstname }}</h3>
+<div class='well row-fluid'>
+	<div class='span4'>
+	is an admin: 
+	{% if teacher.isAdmin == "1" %}
+		Yes.
+	{% else %}
+		No.
+	{% endif %}
+	</div>
+	<div class='span4'>
+	<form action="/home/admin/teachers/{{ teacher.id }}/makeadmin/" method="POST" class='pull-right'>
+		<button class='btn btn-primary'>Add Admin privileges</button>
+	</form>
+	</div>
+	<div class='span4'>
+	<form action="/home/admin/teachers/{{ teacher.id }}/removeadmin/" method="POST" class='pull-right'>
+		<button class='btn btn-primary'>Remove Admin priviliges</button>
+	</form>
+	</div>
+</div>
 <div>created: {{ teacher.created }}</div>
 <div>email: {{ teacher.email }}</div>
 
 <h5>Permissions</h5>
-<form method="POST">
-<button>Save Settings</button>
+<form method="POST" class='well row-fluid'>
+<button class='btn btn-primary pull-right'>Save Settings</button>
 <table>
 	{% for grade in grades %}
 		<tr>
@@ -59,6 +78,7 @@
 		{% endfor %}
 	{% endfor %}
 </table>
-<button>Save Settings</button>
+<button class='btn btn-primary pull-right'>Save Settings</button>
+<br>
 </form>
 {% endblock %}

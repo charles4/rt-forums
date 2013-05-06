@@ -19,7 +19,7 @@
 		</div>
 		<div class='span5'>
 
-			<form method='POST'>
+			<form method='POST' class='well'>
 				<legend>Sign your school up for the beta</legend>
 
 				{% block messages %}
@@ -50,20 +50,20 @@
 				<label for="lastname">Your Lastname</label>
 				<input type="text" name="lastname"></input>
 
-				<label for="secretquestion">Enter a secret question</label>
-				<input type='text' name='secretquestion'></input>
-
-				<label for='secretanswer'>Enter the answer to your secret question</label>
-				<input type='text' name='secretanswer'></input>
-
 				<label for="email">Your Email Address</label>
 				<input type="email" name="email"></input>
+				<span class='help-block'>This email will be used for logging in and resetting your password should you need to.</span>
 				
 				<label for="password">Your Password</label>
 				<input type="password" name="password"></input>
+				<span class='help-block'>While I am not your boss and there are no actual rules for your password. I would suggest you use something on the longer side.</span>
 
-				<button>Submit</button>
+				<label for"password-confirm">Confirm your password</label>
+				<input type="password" name="password-confirm"></input>
+
+				<button class='btn pull-right'>Submit</button>
 			</form>
+			<br>
 			 <span id="cdSiteSeal2"><script type="text/javascript" src="//tracedseals.starfieldtech.com/siteseal/get?scriptId=cdSiteSeal2&amp;cdSealType=Seal2&amp;sealId=55e4ye7y7mb7309fc281e14f5fa2345bm9y7mb7355e4ye76d475e883928e63de"></script></span>
 		</div>
 		<div class='span3'>

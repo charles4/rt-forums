@@ -26,11 +26,12 @@
 	{% block messages %}
 		{{ super() }}
 	{% endblock %}
-	<ul class='no-dots'>
+	<legend><h3>Search Results:</h3></legend>
+	<ol>
 		{% for result in results %}
-			<li><a href="{{ result.address }}">{{ result.repr }}</a> {{ result.score }} </li>
+			<li>Found a {{ result.type }}: <a href="{{ result.address }}">{{ result.repr }}</a></li>
 		{% else %}
 			<li>No results found.</li>
 		{% endfor %}
-	</ul>
+	</ol>
 {% endblock %}	

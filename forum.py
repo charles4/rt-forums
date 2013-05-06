@@ -460,20 +460,20 @@ def route_register():
 			flash("Please enter your lastname.")
 			return render_template("template_registration.html")
 
-		if not request.form['secretquestion']:
-			flash("Please enter a secret question.")
-			return render_template("template_registration.html")
-
-		if not request.form['secretanswer']:
-			flash("Please enter a answer to your secret question.")
-			return render_template("template_registration.html")
-
 		if not request.form['email']:
 			flash("Please enter your email address.")
 			return render_template("template_registration.html")
 
 		if not request.form['password']:
 			flash("Please enter a password.")
+			return render_template("template_registration.html")
+
+		if not request.form['password-confirm']:
+			flash("Please confirm your password.")
+			return render_template("template_registration.html")
+
+		if request.form['password'] != request.form['password-confirm']:
+			flash("Your confirm password line does not match your password line.")
 			return render_template("template_registration.html")
 
 		### setup db entries
@@ -485,8 +485,6 @@ def route_register():
 					email=request.form['email'], 
 					password=request.form['password'],
 					school=s,
-					secretquestion=request.form['secretquestion'],
-					secretanswer=request.form['secretanswer'], 
 					isAdmin=True)
 		db.session.add(t)
 
@@ -538,14 +536,15 @@ def route_invited_signup(email):
 		if not request.form['lastname']:
 			flash("Please enter your lastname.")
 			return render_template("template_registration.html")
-		if not request.form['secretquestion']:
-			flash("Please enter a secret question.")
-			return render_template("template_registration.html")
-		if not request.form['secretanswer']:
-			flash("Please enter a answer to your secret question.")
-			return render_template("template_registration.html")
 		if not request.form['password']:
 			flash("Please enter a password.")
+			return render_template("template_registration.html")
+		if not request.form['password-confirm']:
+			flash("Please confirm your password.")
+			return render_template("template_registration.html")
+
+		if request.form['password'] != request.form['password-confirm']:
+			flash("Your confirm password line does not match your password line.")
 			return render_template("template_registration.html")
 
 		s = School.query.filter_by(id=t.school_id).first()
@@ -553,9 +552,6 @@ def route_invited_signup(email):
 		t.firstname = request.form["firstname"]
 		t.lastname = request.form["lastname"]
 		t.password = bcrypt.generate_password_hash(request.form['password'], 14)
-		t.isAdmin = False
-		t.secretquestion = request.form["secretquestion"]
-		t.secretanswer = request.form["secretanswer"]
 
 		### try to commit changes to the db
 		try:
@@ -781,7 +777,7 @@ def route_home_admin_teachers():
 				### generate onetime unique key
 				base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
 				salt = ''.join(random.sample(base, len(base)))
-				key = hashlib.sha256(salt).hexdigest()
+				key = hashlib.sha256(salt).hexdigest()[:10]
 
 				school = School.query.filter_by(id=session['user'].school_id).first()
 				t = Teacher(email=email, school=school, password="123", key=key)
@@ -924,6 +920,28 @@ def route_home_admin_teachers_teacher(teacher_id):
 
 	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist)
 
+@app.route("/home/admin/teachers/<teacher_id>/makeadmin/", methods=['POST', 'GET'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers_teacher_makeadmin(teacher_id):
+	teacher = Teacher.query.filter_by(id=teacher_id).first()
+	teacher.isAdmin = True
+	db.session.commit()
+
+	return redirect(url_for("route_home_admin_teachers_teacher.html", teacher_id=teacher_id))
+
+@app.route("/home/admin/teachers/<teacher_id>/removeadmin/", methods=['POST', 'GET'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_teachers_teacher_makeadmin(teacher_id):
+	teacher = Teacher.query.filter_by(id=teacher_id).first()
+	teacher.isAdmin = False
+	db.session.commit()
+
+	return redirect(url_for("route_home_admin_teachers_teacher.html", teacher_id=teacher_id))
+
 @app.route("/home/admin/students/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
@@ -959,6 +977,19 @@ def route_home_admin_students():
 	
 	return render_template("template_admin_students.html", students_by_grade=s_by_g)
 
+@app.route("/home/admin/students/delete/<student_id>/", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+@requireAdmin
+def route_home_admin_students_delete(student_id):
+
+	student = Student.query.filter_by(id=student_id).first()
+	db.session.delete(student)
+	db.session.commit()
+
+	flash("Student '" + student.lastname + ", " + student.firstname + "' has been deleted.")
+	return redirect(url_for("route_home_admin_students"))
+
 @app.route("/home/admin/students/graduate/", methods=['POST'])
 @methodTimer
 @requireLogin
@@ -992,6 +1023,7 @@ def route_home_search():
 	keywords = request.args.get("keywords")
 	teacher = Teacher.query.filter_by(id=session['user'].id).first()
 
+
 	## fetch all students teacher has access to
 	tokens = teacher.tokens.all()
 	gradetokens = teacher.grade_tokens.all()
@@ -1021,13 +1053,15 @@ def route_home_search():
 	### now loop through all text, levenshtein each word
 
 	class Result(object):
-		def __init__(self, score, representation, address, date=None):
+		def __init__(self, score, representation, address, mytype, date=None):
 			self.score = score
 			self.repr = representation
 			self.address = address
 			self.date = date
+			self.type = mytype
 
 	results = []
+	min_score = 100000
 	for student in students:
 		myscore = 0.0
 		for keyword in keywords.split():
@@ -1050,8 +1084,9 @@ def route_home_search():
 		timestamp_ = calendar.timegm(student.created.timetuple())
 		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
 		myscore = myscore * (ratio + 1)
-			
-		results.append(Result(myscore, _repr, address))
+		if myscore < min_score:
+			min_score = myscore			
+		results.append(Result(myscore, _repr, address, "student"))
 
 	for post in posts:
 		myscore = 0.0
@@ -1074,8 +1109,9 @@ def route_home_search():
 		timestamp_ = calendar.timegm(post.created.timetuple())
 		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
 		myscore = myscore * (ratio + 1)
-			
-		results.append(Result(myscore, _repr, address))
+		if myscore < min_score:
+			min_score = myscore				
+		results.append(Result(myscore, _repr, address, "post"))
 
 	for comment in comments:
 		myscore = 0.0
@@ -1089,18 +1125,29 @@ def route_home_search():
 			myscore += lowest_lev_result
 
 		address = "/home/%s/%s/%s/" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id)
-		_repr = comment.content
+		if len(comment.content) > 100:
+			_repr = comment.content[:100] + "..."
+		else:
+			_repr = comment.content
 
 		## adjust final score by date
 		epoch_time = time.time()
 		timestamp_ = calendar.timegm(comment.created.timetuple())
 		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
 		myscore = myscore * (ratio + 1)
-			
-		results.append(Result(myscore, _repr, address))
+		if myscore < min_score:
+			min_score = myscore				
+		results.append(Result(myscore, _repr, address, "comment"))
 
 
-	return render_template("template_home_search.html", results=sorted(results, key=lambda result:result.score))
+	### only return results with 50% variance of lowest score
+	final_results = []
+	score_range = min_score * 1.5
+	for result in results:
+		if result.score < score_range:
+			final_results.append(result)
+
+	return render_template("template_home_search.html", results=sorted(final_results, key=lambda result:result.score))
 
 @app.route("/mailtest")
 @methodTimer
@@ -1133,6 +1180,10 @@ def presets():
 	db.session.add(Student(firstname="Franklyn", lastname="Rosevelt", grade=grade))
 	db.session.add(Student(firstname="Richard", lastname="Nixon", grade=grade))
 	db.session.add(Student(firstname="Bill", lastname="Clinton", grade=grade))
+	db.session.commit()
+
+	gradetoken = GradePermissionToken(grade=grade, teacher=teacher)
+	db.session.add(gradetoken)
 	db.session.commit()
 
 

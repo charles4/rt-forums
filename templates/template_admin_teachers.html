@@ -7,11 +7,6 @@
 		.form{
 			width:100%;
 		}
-		.light-background{
-			background-color: rgb(233,233,245);
-			padding:10px;
-			margin:10px;
-		}
 	</style>
 {% endblock %}
 
@@ -38,7 +33,7 @@
 	<h4>Manage</h4>
 	<ul>
 		{% for teacher in teachers %}
-			<li class='no-dots light-background'>
+			<li class='no-dots well'>
 
 				<legend><a href='/home/admin/teachers/{{ teacher.id }}'><h4>{{ teacher.email }}</a> <small>{{ teacher.lastname }}, {{ teacher.firstname }}  <a href='/home/admin/teachers/{{ teacher.id }}/'>Permissions</a></small></h4></legend>
 				<div class='container-fluid'>

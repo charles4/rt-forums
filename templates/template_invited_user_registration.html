@@ -3,44 +3,65 @@
 <head>
     {% block head %}
     <title>{% block title %}{% endblock %}</title>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.min.css'>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
     {% endblock %}
 
 </head>
 <body>
-	{% block messages %}
-       	{% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class=flashes>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        {% endwith %}
-    {% endblock %}
+	<div class='container'>
+
 	{% block body %}
-	<form method='POST'>
-		<legend>Create an account with Round Table Forums</legend>
+	<div class='row'>
+		<div class='span7'>
+			<h1>Round Table Forums</h1>
+			<h4>A forum system designed for teachers.</h4>
+		</div>
+		<div class='span5'>
 
-		<label for="firstname">Your Firstname</label>
-		<input type="text" name="firstname"></input>
+			<form method='POST' class='well'>
+				<legend>Fill out your details</legend>
 
-		<label for="lastname">Your Lastname</label>
-		<input type="text" name="lastname"></input>
+				{% block messages %}
+					<div class='row'>
+					<div class='span5'>
+			       	{% with messages = get_flashed_messages() %}
+			            {% if messages %}
+			                <ul class=flashes>
+			                {% for message in messages %}
+			                    <li>{{ message }}</li>
+			                {% endfor %}
+			            </ul>
+			            {% endif %}
+			        {% endwith %}
+			   		</div>
+					</div>
+			    {% endblock %}
 
-		<label for="secretquestion">Enter a secret question</label>
-		<input type='text' name='secretquestion'></input>
+				<label for="firstname">Your Firstname</label>
+				<input type="text" name="firstname"></input>
 
-		<label for='secretanswer'>Enter the answer to your secret question</label>
-		<input type='text' name='secretanswer'></input>
+				<label for="lastname">Your Lastname</label>
+				<input type="text" name="lastname"></input>
 
-		<label for="email">Your Email Address</label>
-		<input type="email" name="email" value={{ emailaddress }}></input>
-		
-		<label for="password">Your Password</label>
-		<input type="password" name="password"></input>
+				<label for="email">Your Email Address</label>
+				<input type="email" name="email"></input>
+				
+				<label for="password">Your Password</label>
+				<input type="password" name="password"></input>
+				<span class='help-block'>While I am not your boss and there are no actual rules for your password. I would suggest you use something on the longer side.</span>
 
-		<button>Submit</button>
-	</form>
+				<label for"password-confirm">Confirm your password</label>
+				<input type="password" name="password-confirm"></input>
+
+				<button class='brn pull-right'>Submit</button>
+			</form>
+			 <span id="cdSiteSeal2"><script type="text/javascript" src="//tracedseals.starfieldtech.com/siteseal/get?scriptId=cdSiteSeal2&amp;cdSealType=Seal2&amp;sealId=55e4ye7y7mb7309fc281e14f5fa2345bm9y7mb7355e4ye76d475e883928e63de"></script></span>
+		</div>
+		<div class='span3'>
+
+		</div>
+	</div>
 	{% endblock %}
+	</div>
 </body>

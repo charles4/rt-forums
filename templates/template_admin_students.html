@@ -42,7 +42,7 @@
 		<b> {{ grade.grade.name }} </b>
 		<ul>
 		{% for student in grade.students %}
-			<li>{{ student.lastname }}, {{ student.firstname }}</li>
+			<li>{{ student.lastname }}, {{ student.firstname }} (<a href="/home/admin/students/delete/{{ student.id }}/">delete</a>)</li>
 		{% else %}
 			<li>No students found</li>
 		{% endfor %}
