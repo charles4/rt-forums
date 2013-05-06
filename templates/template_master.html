@@ -35,7 +35,7 @@
             background-color: white;
         }
         .margin-top{
-            margin-top: 100px;
+            margin-top: 0px;
         }
         .margin-top-tiny{
             margin-top: 10px;
@@ -50,25 +50,13 @@
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class='fixed-top'>
-            <div class='span8 margin-top-tiny'>
-               {% block breadcrumbs %}{% endblock %}
-            </div>
-            <div class="span4 margin-top-tiny">
-                <form method="GET" action="/home/search/" class='form-inline form-search'>
-                    <input type="text" name='keywords'></input>
-                    <button class='btn'>Search</button>
-                </form>
-            </div>
-        </div>
 
-        <div class='row-fluid margin-top wordbreak'>
-            <div class='span2 mainmenu'>
-                <ul class="nav nav-pills nav-stacked">
-                    <li class='disabled wordbreak'><a href='/home'><h4>{{ session.school.schoolname }}</a></h4></li>
-                    <li class='disabled wordbreak'><a href='#'>{{ session.user.firstname }} {{ session.user.lastname }}</a></li>
-                    <li class='disabled wordbreak'><a href='#'>{{ session.user.email }}</a></li>
+        <div class='navbar navbar-inverse'>
+            <div class='navbar-inner'>
+                <a class='brand' href='/home'>{{ session.school.schoolname }}</a>
+                <ul class='nav'>
+                    <li class='disabled'><a href='#'>{{ session.user.firstname }} {{ session.user.lastname }}</a></li>
+                    <li class='disabled'><a href='#'>{{ session.user.email }}</a></li>
                     <li><a href='/home'><b>Home</b></a></li>
                     {% if session.user.isAdmin == "1" %}
                         <li><a href='/home/admin'><b>Admin</b></a></li>
@@ -77,13 +65,24 @@
                     <li><a href='/logout'><b>Logout</b></a></li>
 
                 </uL>
+                <form method="GET" action="/home/search/" class='form-inline input-append'>
+                    <input class='span2' id="appendedInputButton" type="text" name='keywords'></input>
+                    <button class='btn' type="button">Search</button>
+                </form>
             </div>
+        </div>
+        <div>
+            {% block breadcrumbs %}{% endblock %}
+        </div>  
+    <div class="container-fluid">
+        <div class='row-fluid margin-top wordbreak'>
+
             <div class='span9'>
                 {% block content %}
                         {% block messages %}
                             {% with messages = get_flashed_messages() %}
                                 {% if messages %}
-                                    <ul class="flashes no-dots text-warning" >
+                                    <ul class="flashes no-dots text-info" >
                                     {% for message in messages %}
                                         <li>System Message: {{ message }}</li>
                                     {% endfor %}

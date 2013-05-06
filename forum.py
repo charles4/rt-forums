@@ -24,6 +24,8 @@ store = RedisStore(redis.StrictRedis(host='roundtableforums.net', port=7555, db=
 from flask_mail import Mail
 from flask_mail import Message
 
+### regex
+import re
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:PepperP0tts1@roundtableforums.net/roundtableforums_db'
@@ -962,13 +964,28 @@ def route_home_admin_students():
 		students = request.form['students'].split(",")
 		for student in students:
 			bits = student.split()
+
+			### check the validity of the formatting
+			length = len(bits)
+			if length != 3:
+				flash("There seems to be invalid formatting around '%s'." % student)
+				return redirect(url_for("route_home_admin_students"))
+			if not re.match("^[0-9]?[0-9]$", bits[2]):
+				flash("You didn't use a valid grade for entry '%s'." % student)
+				return redirect(url_for("route_home_admin_students"))
+			if int(bits[2]) > 12:
+				flash("At the moment, you can only use grades 1-12 for entry '%s'." % student)
+				return redirect(url_for("route_home_admin_students"))
+
+
 			grade = Grade.query.filter_by(school_id=session['user'].school_id, numeric_repr=bits[2]).first()
 			db.session.add(Student(firstname=bits[1], lastname=bits[0], grade=grade))
+			try:
+				db.session.commit()
+			except exc.SQLAlchemyError, e:
+				print str(e)
 			flash(bits[0] + ", " + bits[1] + " added to " + grade.name + ".")
-		try:
-			db.session.commit()
-		except exc.SQLAlchemyError, e:
-			print str(e)
+
 
 	### create an array of students by grade
 	class GradeBag(object):
@@ -1152,18 +1169,21 @@ def search_helper(keywords, teacher):
 		myscore = 0.0
 		for keyword in keywords.split():
 			lowest_lev_result = 10000
-
+			### char counter just counts how many characters we've passed
+			### char_position_word is the position of the last character in the word with the lowest
+			### lev score
+			char_counter = 0
+			char_position_word = 0
 			for word in comment.content.split():
 				lev_result = levenshtein(keyword, word) + .1
 				if lev_result < lowest_lev_result:
 					lowest_lev_result = lev_result
+					char_position_word = char_counter + (len(word))
+				char_counter += (len(word) + 1) ### + 1 because we're splitting on spaces
 			myscore += lowest_lev_result
 
 		address = "/home/%s/%s/%s/" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id)
-		if len(comment.content) > 100:
-			_repr = comment.content[:100] + "..."
-		else:
-			_repr = comment.content
+		_repr = comment.content[:char_position_word] + "..."
 
 		## adjust final score by date
 		epoch_time = time.time()
@@ -1225,8 +1245,9 @@ def route_home_search():
 	class Page(object):
 		def __init__(self, results, pagenumber, keywords):
 			self.results = results
-			self.pagenumber = pagenumber
+			self.pagenumber = pagenumber + 1
 			self.url = url_for("route_home_search", keywords=keywords, page=pagenumber)
+			self.active = False
 		def __repr__(self):
 			return "<page %r>" % self.pagenumber
 
@@ -1261,6 +1282,9 @@ def route_home_search():
 		prev_page = None
 	else:
 		prev_page = pages[PAGE - 1]
+
+	### set page active
+	pages[PAGE].active = True
 
 	return render_template("template_home_search.html", pages=pages,
 														prev_page = prev_page,

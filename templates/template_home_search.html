@@ -27,33 +27,38 @@
 		{{ super() }}
 	{% endblock %}
 	<legend><h3>Search Results:</h3></legend>
-	<ol>
+	<ul class='no-dots'>
 		{% for result in results %}
-			<li>Found a {{ result.type }}: <a href="{{ result.address }}">{{ result.repr }}</a></li>
+			<li class='well'><div>Found a {{ result.type }}: </div>
+				<div><a href="{{ result.address }}">{{ result.repr }}</a></div>
+			</li>
 		{% else %}
 			<li>No results found.</li>
 		{% endfor %}
-	</ol>
+	</ul>
 
 	<div class="pagination">
     <ul>
-    	{% for page in pages %}
-    		<li><a href="{{ page.url }}">{{ page.pagenumber }}</a></li>
-    	{% endfor %}
-    <li>
     	{% if prev_page %}
-    		<a href="{{ prev_page.url }}">Prev</a>
+    		<li><a href="{{ prev_page.url }}">Prev</a></li>
     	{% else %}
-    		<a href="#" class="disabled">Prev</a>
+    		<li class='disabled'><a href="#">Prev</a></li>
     	{% endif %}
-    </li>
-    <li>
+
+    	{% for page in pages %}
+    	{% if page.active %}
+    		<li class='disabled'><a href="{{ page.url }}">{{ page.pagenumber }}</a></li>
+    	{% else %}
+    		<li><a href="{{ page.url }}">{{ page.pagenumber }}</a></li>
+    	{% endif %}
+    	{% endfor %}
+
     	{% if next_page %}
-    		<a href="{{ next_page.url }}">Next</a>
+    		<li><a href="{{ next_page.url }}">Next</a></li>
     	{% else %}
-    		<a href="#" class="disabled">Next</a>
+    		<li class='disabled'><a href="#" class="disabled">Next</a></li>
     	{% endif %}
-    </li>
+  
 
     </ul>
     </div>
