@@ -34,4 +34,27 @@
 			<li>No results found.</li>
 		{% endfor %}
 	</ol>
+
+	<div class="pagination">
+    <ul>
+    	{% for page in pages %}
+    		<li><a href="{{ page.url }}">{{ page.pagenumber }}</a></li>
+    	{% endfor %}
+    <li>
+    	{% if prev_page %}
+    		<a href="{{ prev_page.url }}">Prev</a>
+    	{% else %}
+    		<a href="#" class="disabled">Prev</a>
+    	{% endif %}
+    </li>
+    <li>
+    	{% if next_page %}
+    		<a href="{{ next_page.url }}">Next</a>
+    	{% else %}
+    		<a href="#" class="disabled">Next</a>
+    	{% endif %}
+    </li>
+
+    </ul>
+    </div>
 {% endblock %}	

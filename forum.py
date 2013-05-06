@@ -234,6 +234,16 @@ class GradePermissionToken(db.Model):
 	def __repr__(self):
 		return "<Grade Permission %r>" % self.id
 
+### none database classes
+
+class Result(object):
+	def __init__(self, score, representation, address, mytype, date=None):
+		self.score = score
+		self.repr = representation
+		self.address = address
+		self.date = date
+		self.type = mytype
+
 
 #### wrappers ####
 
@@ -1013,21 +1023,13 @@ def route_home_admin_students_graduate():
 	flash("All students have been graduated to the next grade level.")
 	return redirect(url_for("route_home_admin_students"))
 
-@app.route("/home/search/", methods=['GET'])
-@methodTimer
-@requireLogin
-def route_home_search():
-	### take levenshtein of keyword string "stupid kids suck" and each post title, comment and student (name)
-	### rank results by levenshtein
 
-	keywords = request.args.get("keywords")
-	teacher = Teacher.query.filter_by(id=session['user'].id).first()
-
-
-	## fetch all students teacher has access to
+def search_helper(keywords, teacher):
+## fetch all students teacher has access to
 	tokens = teacher.tokens.all()
 	gradetokens = teacher.grade_tokens.all()
 
+	### an array of all student ids current user has access to
 	ids = []
 	for t in tokens:
 		ids.append(t.student_id)
@@ -1038,6 +1040,7 @@ def route_home_search():
 			if student.id not in ids:
 				ids.append(student.id)
 
+	## an array of all students current user has access to
 	students = Student.query.filter(Student.id.in_(ids)).all()
 
 	## now fetch all posts about those students
@@ -1050,44 +1053,73 @@ def route_home_search():
 		for com in coms:
 			comments.append(com)
 
-	### now loop through all text, levenshtein each word
 
-	class Result(object):
-		def __init__(self, score, representation, address, mytype, date=None):
-			self.score = score
-			self.repr = representation
-			self.address = address
-			self.date = date
-			self.type = mytype
 
+
+	#### build array of result objects made of students, posts and comments
 	results = []
+
+	### set "impossibly" high min_score, so anything is lower than it. 
+	### as far as levenshtein differences between individual words go this is impossibly high
+	### since whats the longest word like 12 characters or something?
+	### min_score is overall lowest score out of all results
 	min_score = 100000
+
+	### iterate through student objects
 	for student in students:
+		### local score for this student object
+		### made by adding smallest levenshtein results together
+		### lower scores are more relevent
 		myscore = 0.0
+
+		### iterate through keywords or search terms
 		for keyword in keywords.split():
+			### lowest levenshtein result of all keyword vs word in text comparisons
 			lowest_lev_result = 10000
 
+			### text to be compared to keywords
 			text = student.firstname + " " + student.lastname
 
+			### iterate through text to compare to keywords
 			for word in text.split():
-				lev_result = levenshtein(keyword, word) + .1  ## to avoid zero
+
+				### compare word to a keyword
+				lev_result = levenshtein(keyword, word) + .1  ## to avoid results of zero
+
+				### if the comparison produces a smaller result than current lowest result
+				### set current lowest to new result
 				if lev_result < lowest_lev_result:
 					lowest_lev_result = lev_result
 			
+			#### add onto student objects current overall score
 			myscore += lowest_lev_result
 
+		### define textual representaion of the student object
 		_repr = student.lastname + ", " + student.firstname	
+		### define link address of student object
 		address  = "/home/%s/%s/" % (student.grade.name, student.id)
 
 		## adjust final score by date
+		## closer current date is to objects creation date, the more relevent the object is
+		## so it gets a lower score
 		epoch_time = time.time()
 		timestamp_ = calendar.timegm(student.created.timetuple())
+		### ratio of current time (in seconds since epoch) vs objects timestamp
 		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		### adjust obejcts final score by the ratio
+		### +1 is entirely unnecessary
 		myscore = myscore * (ratio + 1)
+
+		### update overal minimum score for all result objects
 		if myscore < min_score:
 			min_score = myscore			
+
+		### create actual result object and append to result array
 		results.append(Result(myscore, _repr, address, "student"))
 
+
+	### see comments above for expanation
+	### same logic, some different variable names/paths
 	for post in posts:
 		myscore = 0.0
 		for keyword in keywords.split():
@@ -1113,6 +1145,9 @@ def route_home_search():
 			min_score = myscore				
 		results.append(Result(myscore, _repr, address, "post"))
 
+
+	### see comments on student section for explanation
+	### same logic, some different variable names/paths
 	for comment in comments:
 		myscore = 0.0
 		for keyword in keywords.split():
@@ -1145,9 +1180,92 @@ def route_home_search():
 	score_range = min_score * 1.5
 	for result in results:
 		if result.score < score_range:
-			final_results.append(result)
+			final_results.append(result)	
 
-	return render_template("template_home_search.html", results=sorted(final_results, key=lambda result:result.score))
+	return final_results	
+
+@app.route("/home/search/", methods=['GET'])
+@methodTimer
+@requireLogin
+def route_home_search():
+	### for pagination check what page we're on, if none provided, pick 0
+	if 'page' in request.args:
+		PAGE = int(request.args['page'])
+	else:
+		PAGE = 0
+
+	### take levenshtein of keyword string "stupid kids suck" and each post title, comment and student (name)
+	### score results by levenshtein values
+
+	keywords = request.args.get("keywords")
+	teacher = Teacher.query.filter_by(id=session['user'].id).first()
+
+	## if keywords == those store in session
+	### then don't recalc search
+	if 'search_query' in session and 'search_final_results' in session:
+		if session['search_query'] != keywords:
+			final_results = search_helper(teacher=teacher, keywords=keywords)
+
+			### store results and query in session
+			session['search_final_results'] = final_results
+			session['search_query'] = keywords
+
+		#### else session['search_query'] IS equal to keywords
+		else:
+			final_results = session['search_final_results']
+	### else 'search_query' and 'search_final_results' do not exist in the session
+	else:
+		final_results = search_helper(teacher=teacher, keywords=keywords)
+
+		### store results and query in session
+		session['search_final_results'] = final_results
+		session['search_query'] = keywords
+
+	### paginate results
+	class Page(object):
+		def __init__(self, results, pagenumber, keywords):
+			self.results = results
+			self.pagenumber = pagenumber
+			self.url = url_for("route_home_search", keywords=keywords, page=pagenumber)
+		def __repr__(self):
+			return "<page %r>" % self.pagenumber
+
+	pages = []
+	counter = 0
+	pagenumber = 0
+	for result in final_results:
+		if counter == 0:
+			pages.append(Page([], pagenumber, keywords))
+			pages[pagenumber].results.append(result)
+		else:
+			pages[pagenumber].results.append(result)
+
+		counter += 1
+
+		if counter == 10:
+			counter = 0
+			pagenumber += 1
+
+	print str(pages)
+
+	### check if PAGE is out of range
+	if PAGE >= len(pages):
+		abort(404)
+
+	if PAGE + 2 <= len(pages):
+		next_page = pages[PAGE + 1]
+	else:
+		next_page = None
+
+	if PAGE == 0:
+		prev_page = None
+	else:
+		prev_page = pages[PAGE - 1]
+
+	return render_template("template_home_search.html", pages=pages,
+														prev_page = prev_page,
+														next_page = next_page,
+														results=sorted(pages[PAGE].results, key=lambda result:result.score))
 
 @app.route("/mailtest")
 @methodTimer
@@ -1188,7 +1306,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	presets()
+	#presets()
 
 	app.debug = True
 	app.run()
