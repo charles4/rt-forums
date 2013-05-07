@@ -1,4 +1,3 @@
-from app import app
 from flask import Flask, render_template, session, redirect, url_for, abort, request, flash, send_from_directory
 from flask.ext.sqlalchemy import SQLAlchemy
 from flaskext.bcrypt import Bcrypt 
