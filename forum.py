@@ -770,6 +770,10 @@ def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comme
 	p = Post.query.filter_by(id=post_id).first()
 	c = Comment.query.filter_by(id=comment_id).first()
 
+	### check if user is owner of the comment
+	if c.author.id != session['user'].id:
+		abort(401)
+
 	if request.method == "POST":
 		if not request.form['comment']:
 			flash("The comment you entered was blank.")
@@ -879,7 +883,7 @@ http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
 
 				mail.send(msg)
 
-	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
+	teachers = Teacher.query.filter_by(school_id=session['user'].school_id).order_by(Teacher.email)
 	return render_template("template_admin_teachers.html", teachers=teachers)
 
 @app.route("/home/admin/teachers/delete/", methods=['POST'])
