@@ -1012,7 +1012,7 @@ def route_home_admin_teachers_teacher_makeadmin(teacher_id):
 @methodTimer
 @requireLogin
 @requireAdmin
-def route_home_admin_teachers_teacher_makeadmin(teacher_id):
+def route_home_admin_teachers_teacher_removeadmin(teacher_id):
 	teacher = Teacher.query.filter_by(id=teacher_id).first()
 	teacher.isAdmin = False
 	db.session.commit()
