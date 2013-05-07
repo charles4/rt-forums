@@ -27,7 +27,7 @@
 			<ul class='no-dots'>
 			{% for comment in comments %}
 				<li>
-					<h5> 
+					<h5><a name="comment-{{ comment.id }}"></a>
 						{{ comment.author.firstname }} {{ comment.author.lastname }} 
 						<small> wrote at {{ comment.created }}
 						{% if comment.author.id == session.user.id %}

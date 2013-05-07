@@ -16,15 +16,15 @@
 {% block content %}
 
 	<h4>Unread Comments and Posts</h4>
-		<ul class='no-dots'>
+		<ul class='no-dots well'>
 			{% for uv in unviewed %}
-				<li><a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}'>{{ uv.comment.content[:100] }}</a> by <small>{{ uv.comment.author.firstname }} {{ uv.comment.author.lastname }}.</small></li>
+				<li><small>{{ uv.comment.created }}</small> - <a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}/#comment-{{ uv.comment.id }}'>{{ uv.comment.content[:100] }}</a> by <small>{{ uv.comment.author.firstname }} {{ uv.comment.author.lastname }}.</small></li>
 			{% else %}
 				<li>You have no unviewed comments or posts.</li>
 			{% endfor %}
 		</ul>
 	<h4>Forums</h4>
-	<ul class='no-dots'>
+	<ul class='no-dots well'>
 		{% for grade in grades %}
 			<li><a href='/home/{{ grade.name }}'>{{ grade.name }} forums</a></li>
 		{% else %}
@@ -35,7 +35,7 @@
 
 	{% if session.user.isAdmin == "1" %}
 		<h4>Administration</h4>
-		<ul class='no-dots'>
+		<ul class='no-dots well'>
 			<li><a href='/home/admin'>Admin</a></li>
 		</ul>
 	{% endif %}

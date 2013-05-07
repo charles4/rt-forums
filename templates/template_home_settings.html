@@ -1,0 +1,39 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+		<style>
+		.form{
+			width:100%;
+		}
+		</style>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li class='active'>Settings</li>
+    </ul>
+{% endblock %}
+{% block content %}
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
+	<h4>Avatar</h4>
+	<img src="/avatars/{{ session.user.avatar }}" height="64" width="64"></img>
+	<form method="POST" enctype="multipart/form-data" class='form-horizontal'>
+		<span class='help-block'>While you can choose any size of image, I would recomend choosing a small square one. Since the forum system will chop it down to an appropriate size. And that can distort larger or unsquare images.</span><br>
+		<div class='control-group'>
+			<label class='control-label' for='avatar'>Browse to an image file to use as your avatar:</label>
+			<div class='controls'>
+				<input type='file' name='avatar' class='file'></input>
+			</div>
+		</div>
+		<button class='btn'>Upload</button>
+
+
+	</form>
+
+{% endblock %}	

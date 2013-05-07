@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for, abort, request, flash
+from flask import Flask, render_template, session, redirect, url_for, abort, request, flash, send_from_directory
 from flask.ext.sqlalchemy import SQLAlchemy
 from flaskext.bcrypt import Bcrypt 
 
@@ -27,7 +27,16 @@ from flask_mail import Message
 ### regex
 import re
 
+#for file uploads
+from werkzeug import secure_filename
+import os
+from PIL import Image
+UPLOAD_FOLDER = '/var/forum/uploads'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:PepperP0tts1@roundtableforums.net/roundtableforums_db'
 app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18\x8a|I\xf4U'
 
@@ -70,12 +79,13 @@ class Teacher(db.Model):
 	secretquestion = db.Column(db.String(256))
 	secretanswer = db.Column(db.String(256))
 	onetimekey = db.Column(db.String(64))
+	avatar = db.Column(db.String(128))
 
 	### db relationships
 	school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
 	school = db.relationship('School', backref=db.backref('teachers', lazy='dynamic'))
 
-	def __init__(self, email=None, school=None, key=None, firstname=None, lastname=None, password=None, secretquestion=None, secretanswer=None, isAdmin=False, create_date=None):
+	def __init__(self, email=None, school=None, key=None, firstname=None, lastname=None, password=None, secretquestion=None, secretanswer=None, isAdmin=False, create_date=None, avatar=None):
 		self.firstname = firstname
 		self.lastname = lastname
 		self.email = email
@@ -88,6 +98,7 @@ class Teacher(db.Model):
 		self.secretquestion = secretquestion
 		self.secretanswer = secretanswer
 		self.onetimekey = key
+		self.avatar = avatar
 
 
 	def __repr__(self):
@@ -298,6 +309,35 @@ def requirePermission(fn):
 
 ### General Methods ###
 
+def allowed_file(filename):
+	return "." in filename and \
+		filename.rsplit(".", 1)[1] in ALLOWED_EXTENSIONS
+
+def saveAvatar(teacher, request):
+	size = 64, 64
+	### get file obj from request ###
+	myfile = request.files['avatar']
+	if myfile and allowed_file (myfile.filename):
+		### setup filename and save to filesystem ####
+		filename = str(session['user'].id) + "_" + secure_filename(myfile.filename)
+		myfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+		### after saving re-open and create tiny version 
+		image = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+		image.thumbnail(size)
+		filename = str(session['user'].id) + "_thumbnail_" + secure_filename(myfile.filename)
+		image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+		### add filename to db
+		teacher.avatar = filename
+		db.session.commit()
+		### refresh teacher obj in session
+		session['user'] = teacher
+
+		return True
+
+	else:			
+		return False
+
 def logout():
 	session.pop('user', None)
 
@@ -344,6 +384,11 @@ def levenshtein(s1, s2):
 
 
 ### routes ###
+
+@app.route('/avatars/<filename>')
+@requireLogin
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route("/", methods=['GET', 'POST'])
 def route_login():
@@ -591,6 +636,10 @@ def route_home():
 	tokens = PermissionToken.query.filter_by(teacher_id=session['user'].id).all()
 	gradetokens = GradePermissionToken.query.filter_by(teacher_id=session['user'].id).all()
 
+	teacher = session['user']
+	db.session.add(teacher)
+	print str(teacher.unviewed.all())
+
 	ids = []
 	for t in tokens:
 		ids.append(t.student_id)
@@ -602,6 +651,7 @@ def route_home():
 	shown_unviewed = []
 	### only show unviewed comments on students teacher has access too
 	for uvcomment in unviewed:
+		print "uvcomments:" + str(uvcomment)
 		if uvcomment.comment.post.student_id in ids or uvcomment.comment.post.student.grade_id in gids:
 			shown_unviewed.append(uvcomment)
 
@@ -618,6 +668,18 @@ def route_home():
 	shown_grades = sorted(shown_grades, key=lambda grade:grade.id)
 	return render_template("template_home.html", grades=shown_grades, unviewed=shown_unviewed)
 
+@app.route("/home/settings/", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_settings():
+
+	if request.method == "POST":
+		teacher = Teacher.query.filter_by(id=session['user'].id).first()
+		if 'avatar' in request.files:
+			saveAvatar(teacher=teacher, request=request)
+			flash("Successfully saved avatar.")
+
+	return render_template("template_home_settings.html")
 
 @app.route("/home/<grade>/")
 @methodTimer
@@ -689,7 +751,7 @@ def route_home_grade_student_post(grade, student_id, post_id):
 
 	### remove all relevant comments from the unviewed comments table
 	for comment in comments:
-		uvc = UnviewedComment.query.filter_by(comment=comment).first()
+		uvc = UnviewedComment.query.filter_by(comment=comment, teacher_id=session['user'].id).first()
 		if uvc:
 			  db.session.delete(uvc)
 	db.session.commit()
@@ -1182,7 +1244,7 @@ def search_helper(keywords, teacher):
 				char_counter += (len(word) + 1) ### + 1 because we're splitting on spaces
 			myscore += lowest_lev_result
 
-		address = "/home/%s/%s/%s/" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id)
+		address = "/home/%s/%s/%s/#comment-%s" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id, comment.id)
 		_repr = comment.content[:char_position_word] + "..."
 
 		## adjust final score by date

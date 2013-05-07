@@ -35,10 +35,10 @@
             background-color: white;
         }
         .margin-top{
-            margin-top: 0px;
+            margin-top: 100px;
         }
         .margin-top-tiny{
-            margin-top: 10px;
+            margin-top: 5px;
         }
         .footer{
             margin-top:200px;
@@ -47,35 +47,42 @@
             word-wrap:break-word;
             word-break:hyphenate;
         }
+        .no-rounded-corners{
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            background-color:black;
+        }
     </style>
 </head>
 <body>
 
-        <div class='navbar navbar-inverse'>
-            <div class='navbar-inner'>
-                <a class='brand' href='/home'>{{ session.school.schoolname }}</a>
-                <ul class='nav'>
-                    <li class='disabled'><a href='#'>{{ session.user.firstname }} {{ session.user.lastname }}</a></li>
-                    <li class='disabled'><a href='#'>{{ session.user.email }}</a></li>
-                    <li><a href='/home'><b>Home</b></a></li>
-                    {% if session.user.isAdmin == "1" %}
-                        <li><a href='/home/admin'><b>Admin</b></a></li>
+    <div class='navbar navbar-inverse no-rounded-corners'>
+        <div class='navbar-inner'>
+            <a class='nav' href='#'><img src="/avatars/{{ session.user.avatar }}" height="50" width="50"></img></a>
+            <a class='brand' href='/home'>{{ session.school.schoolname }}</a>
+            <ul class='nav'>
+                <li><a href='/home/'><b>Home</b></a></li>
+                <li><a href='/home/settings/'><b>Settings</b></a></li>
+                {% if session.user.isAdmin == "1" %}
+                    <li><a href='/home/admin'><b>Admin</b></a></li>
 
-                    {% endif %}
-                    <li><a href='/logout'><b>Logout</b></a></li>
+                {% endif %}
+                <li><a href='/logout'><b>Logout</b></a></li>
 
-                </uL>
-                <form method="GET" action="/home/search/" class='form-inline input-append'>
-                    <input class='span2' id="appendedInputButton" type="text" name='keywords'></input>
-                    <button class='btn' type="button">Search</button>
-                </form>
-            </div>
+            </uL>
+            <form method="GET" action="/home/search/" class='form-inline input-append pull-right margin-top-tiny'>
+                <input class='span2' id="appendedInputButton" type="text" name='keywords'></input>
+                <button class='btn' type="button">Search</button>
+            </form>
         </div>
-        <div>
-            {% block breadcrumbs %}{% endblock %}
-        </div>  
+    </div>
+    <div class='margin-top'>
+        {% block breadcrumbs %}{% endblock %}
+    </div>  
     <div class="container-fluid">
-        <div class='row-fluid margin-top wordbreak'>
+        <div class='row-fluid wordbreak'>
 
             <div class='span9'>
                 {% block content %}

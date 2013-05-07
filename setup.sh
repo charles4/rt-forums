@@ -10,4 +10,6 @@ pip install redis
 pip install mysql-python
 
 
-
+sudo apt-get install libjpeg8-dev
+sudo ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /usr/lib
+pip install PIL
