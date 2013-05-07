@@ -1006,7 +1006,7 @@ def route_home_admin_teachers_teacher_makeadmin(teacher_id):
 	teacher.isAdmin = True
 	db.session.commit()
 
-	return redirect(url_for("route_home_admin_teachers_teacher.html", teacher_id=teacher_id))
+	return redirect(url_for("route_home_admin_teachers_teacher", teacher_id=teacher_id))
 
 @app.route("/home/admin/teachers/<teacher_id>/removeadmin/", methods=['POST', 'GET'])
 @methodTimer
@@ -1017,7 +1017,7 @@ def route_home_admin_teachers_teacher_removeadmin(teacher_id):
 	teacher.isAdmin = False
 	db.session.commit()
 
-	return redirect(url_for("route_home_admin_teachers_teacher.html", teacher_id=teacher_id))
+	return redirect(url_for("route_home_admin_teachers_teacher", teacher_id=teacher_id))
 
 @app.route("/home/admin/students/", methods=['GET', 'POST'])
 @methodTimer
