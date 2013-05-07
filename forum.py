@@ -98,7 +98,10 @@ class Teacher(db.Model):
 		self.secretquestion = secretquestion
 		self.secretanswer = secretanswer
 		self.onetimekey = key
-		self.avatar = avatar
+		if avatar is None:
+			self.avatar = "default_avatar.jpg"
+		else:
+			self.avatar = avatar
 
 
 	def __repr__(self):

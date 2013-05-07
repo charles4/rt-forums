@@ -27,18 +27,25 @@
 			<ul class='no-dots'>
 			{% for comment in comments %}
 				<li>
-					<h5><a name="comment-{{ comment.id }}"></a>
-						{{ comment.author.firstname }} {{ comment.author.lastname }} 
-						<small> wrote at {{ comment.created }}
-						{% if comment.author.id == session.user.id %}
-							<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
-						{% endif %}
-						</small>
-					</h5>
-					{% for line in comment.content.splitlines() %}
-						{{ line }}<br>
-					{% endfor %}
+					<div class="media">
+						<a class="pull-left" href="#">
+							<img class="media-object" src="/avatars/{{ comment.author.avatar }}">
+						</a>
+						<div class="media-body">
 
+							<h4 class='media-heading'><a name="comment-{{ comment.id }}"></a>
+								{{ comment.author.firstname }} {{ comment.author.lastname }} 
+								<small> wrote at {{ comment.created }}
+								{% if comment.author.id == session.user.id %}
+									<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
+								{% endif %}
+								</small>
+							</h4>
+							{% for line in comment.content.splitlines() %}
+								{{ line }}<br>
+							{% endfor %}
+						</div>
+					</div>
 				</li>
 			{% else %}
 				<li>There are no comments</li>
