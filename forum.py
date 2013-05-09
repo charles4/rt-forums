@@ -774,7 +774,7 @@ def route_invited_signup(email):
 
 		t.firstname = request.form["firstname"]
 		t.lastname = request.form["lastname"]
-		t.password = request.form['password']
+		t.password = bcrypt.generate_password_hash(request.form['password'], 14)
 
 		### try to commit changes to the db
 		try:
