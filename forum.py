@@ -104,7 +104,7 @@ class Teacher(db.Model):
 
 		self.setpassword(password)
 
-	def setpassword(password):
+	def setpassword(self, password):
 		### strip whitespace from front and back of password
 		password = password.strip() 
 		self.phash = bcrypt.generate_password_hash(password, 14)
