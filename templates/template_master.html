@@ -5,6 +5,8 @@
     <title>{% block title %}{% endblock %}</title>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.min.css'>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
+    <script src="/static/jquery.1.9.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
     {% endblock %}
 
     <style>
@@ -66,7 +68,18 @@
                 <li><a href='/home/'><b>Home</b></a></li>
                 <li><a href='/home/settings/'><b>Settings</b></a></li>
                 {% if session.user.isAdmin == "1" %}
-                    <li><a href='/home/admin/'><b>Admin</b></a></li>
+                    <li>
+                            <div class="dropdown">
+                                <a class="dropdown-toggle" id="dLabel" role="button" data-toggle="dropdown" data-target="/home/admin/" href="/home/admin/">
+                                Admin
+                                <b class="caret"></b>
+                                </a>
+                                <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                                    <li><a href="/home/admin/manage_students/" data-target="/home/admin/manage_students/">Manage Students</a></li>
+                                    <li><a href="/home/admin/manage_teachers/" data-target="/home/admin/manage_teachers/">Manage Teachers</a></li>
+                                </ul>
+                            </div>
+                    </li>
 
                 {% endif %}
                 <li><a href="/home/help/"><b>Help</b></a></li>
