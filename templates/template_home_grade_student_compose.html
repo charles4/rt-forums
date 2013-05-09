@@ -23,8 +23,8 @@
 {% endblock %}
 {% block content %}
 
-	<h1>Compose</h1>
-	<h3>{{ student.firstname }} {{ student.lastname }} <small> {{ student.grade.name }}</small></h3>
+	<h1>Compose <small>a post about</small></h1>
+	<h3>{{ student.firstname }} {{ student.lastname }} <small>in the {{ student.grade.name }}</small></h3>
 	<form method="POST">
 		<label for='title'>Title:</label>
 		<input type='text' name='title' class='form'></input>
