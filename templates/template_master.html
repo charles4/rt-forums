@@ -65,8 +65,8 @@
             <a class='nav' href='#'><img src="/avatars/{{ session.user.avatar }}" height="50" width="50"></img></a>
             <a class='brand' href='/home'>{{ session.school.schoolname }}</a>
             <ul class='nav'>
-                <li><a href='/home/'><b>Home</b></a></li>
-                <li><a href='/home/settings/'><b>Settings</b></a></li>
+                <li><a href='/home/'>Home</a></li>
+                <li><a href='/home/settings/'>Settings</a></li>
                 {% if session.user.isAdmin == "1" %}
                     <li class="dropdown">
                     <a href="/home/admin/" class="dropdown-toggle" data-toggle="dropdown">
@@ -77,10 +77,11 @@
                         <a href="/home/admin/manage_students/">Manage Students</a>
                         <a href="/home/admin/manage_teachers/">Manage Teachers
                     </ul>
+                </li>
 
                 {% endif %}
-                <li><a href="/home/help/"><b>Help</b></a></li>
-                <li><a href='/logout'><b>Logout</b></a></li>
+                <li><a href="/home/help/">Help</a></li>
+                <li><a href='/logout'>Logout</a></li>
 
             </uL>
             <form method="GET" action="/home/search/" class='form-inline input-append pull-right margin-top-tiny'>
