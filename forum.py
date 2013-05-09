@@ -37,7 +37,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:PepperP0tts1@roundtableforums.net/roundtableforums_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:AnneHathaway123@roundtableforums.net/roundtableforums_db'
 app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18\x8a|I\xf4U'
 
 
