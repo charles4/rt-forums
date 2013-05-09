@@ -1,0 +1,82 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+		<style>
+		.form{
+			width:100%;
+		}
+		</style>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li class='active'>Settings</li>
+    </ul>
+{% endblock %}
+{% block content %}
+	{% block messages %}
+		{{ super() }}
+	{% endblock %}
+	<div class='span11 well'>
+		<h2>Helpful Points</h2>
+		<h3>The General Idea</h3>
+			<p>The general idea behind Round Table Forums' setup is this:</p>
+			<ul>
+				<li>Schools have grades.</li>
+				<li>Grades have students.</li>
+				<li>Students have posts.</li>
+				<li>Posts have comments.</li>
+			</ul>
+			<p>So if you want to make a post about a certain student you
+			<ol>
+				<li>Go to your home page.</li>
+				<li>Choose the grade they're in.</li>
+				<li>Click their name from the list of students in that grade.</li>
+			</ol>
+		</p>
+
+		<h4>What if i can't find a student?</h4>
+			<p>If you don't know what grade a student is in (or you forgot, there's always so many of the little buggers), you can always search for them using the search bar in the top right corner of every page.</p>
+		<h4>They don't show up in the search?</h4>
+			<p>For a student to be visible to you, your school's forum administrator must have granted you access to that student. So if you can't see them, but you're pretty sure they exist, let your school's forum admin know.</p>
+		<h3>Help for Admins</h3>
+		<h4>Granting and Removing Permissions</h4>
+			<p>Permissions are managed on a teacher by teacher basis.</p>
+			<p>To get manage a teacher's permissions:
+				<ol>
+					<li>Go to the "Admin" button in navigation bar at the top of the page.</li>
+					<li>Choose "Manage Teachers" from the drop down.</li>
+					<li>Scroll until you find the teacher you want to manage and then click on their "permissions" link or their email address.</li>
+				</ol>
+			<p>Once you are in the screen to manage a teacher's permissions, you should see a list of all the grades and students for your school. You can check and uncheck students to respectively allow and disallow a teacher access to them.</p>
+			<p>Note that you can grant permission to an entire grade at once, or to students on a individual basis.</p>
+			<p>Importantly, if you check the "Allow access to Grade X" mark, the teacher will have access to the entire grade, no matter what you check or uncheck for the individual students in that grade.</p>
+			<p>On the other hand, if you uncheck the "Allow access to Grade X" mark, access is determined soley on a individual basis for each student. So in that case, it matters what you check or uncheck for each student in the grade.</p>
+			<p>Another important point is about the Graduate button, which you can read about under managing students. Grade level permissions, are for a grade. So when students graduate, they move out of that grade and new ones move into that grade. Individual permissions are independent of what grade a student is in.</p>
+			<p>As an example, if you grant your fourth grade teacher access to all fourth grade students at the grade level. The next year, he or she will have access to all students who were previously in the third grade but are now in the fourth. Whereas if you went through and granted your fourth grade teacher access to each fourth grade student on a inidividual basis, the next year that fourth grade teacher would still have access to the students when they are now in the fifth grade.</p>
+			<p>So as a rule of thumb, primary teachers should be granted access to students at the grade level, while SPED teachers should be granted access to students on a individual basis. As they will likely continue working with the same students, even as they move between grades.</p>
+		<h4>Inviting Teachers</h4>
+			<p>To add users to your forum, you can use the invite section of the "Manage Teachers" admin page. All you have to do is enter their email into the invite box and hit "invite." They will be emailed an invitation to create a user account.</p>
+			<p>You can enter multiple emails by seperating them with commas.</p>
+			<p>Immediately after you have inivited a teacher you can setup their permissions, even if they haven't followed the link in the invitation email to create an account yet. You'll just notice that until they create their account, their name will show up as "None, None".</p>
+		<h4>Managing Students</h4>
+			<h5>Adding students</h5>
+			<p>So you've signed up and logged in, but you don't have any students to discuss yet.</p>
+				<ol>
+					<li>Go to "Admin" in the navigation menu at the top of the page.</li>
+					<li>Choose "Manage Students" from under "Admin".</li>
+				</ol>
+			<p>Adding students to your schools forum is easy. They can be entered in batches of however many you like using the format: "Lastname Firstname Grade,". Where 'Grade' is a number (0-12) with 0 being kindergarten and 12 being twelfth grade. Each Student in the entry should be seperated by the next by a comma.</p>
+			<h5>Graduating Students</h5>
+			<p>Every year students have the unfortunate habit of moving onto the next grade. The graduate button allows you to move each student into the next grade. Students graduating out of twelfth grade move into a category called "graduated". You can of couse delete them, or simply ignore them as no one will have access to them unless you grant them access.</p>
+		<h3>More Help</h3>
+			<p>If you have a question or problem that not answered here, feel free to email me at charles4@email.arizona.edu.</p>
+
+
+	</div>
+
+{% endblock %}	

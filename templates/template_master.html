@@ -66,9 +66,10 @@
                 <li><a href='/home/'><b>Home</b></a></li>
                 <li><a href='/home/settings/'><b>Settings</b></a></li>
                 {% if session.user.isAdmin == "1" %}
-                    <li><a href='/home/admin'><b>Admin</b></a></li>
+                    <li><a href='/home/admin/'><b>Admin</b></a></li>
 
                 {% endif %}
+                <li><a href="/home/help/"><b>Help</b><a></li>
                 <li><a href='/logout'><b>Logout</b></a></li>
 
             </uL>
