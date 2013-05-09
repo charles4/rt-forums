@@ -89,7 +89,6 @@ class Teacher(db.Model):
 		self.firstname = firstname
 		self.lastname = lastname
 		self.email = email
-		self.phash = bcrypt.generate_password_hash(password, 14)
 		self.isAdmin = isAdmin
 		if create_date is None:
 			create_date = datetime.utcnow()
@@ -102,6 +101,13 @@ class Teacher(db.Model):
 			self.avatar = "default_avatar.jpg"
 		else:
 			self.avatar = avatar
+
+		self.setpassword(password)
+
+	def setpassword(password):
+		### strip whitespace from front and back of password
+		password = password.strip() 
+		self.phash = bcrypt.generate_password_hash(password, 14)
 
 
 	def __repr__(self):
@@ -650,7 +656,7 @@ def route_password_reset_process():
 				if request.form["code"] == session['password_reset_code']:
 					if request.form["password1"] == request.form["password2"]:
 						t = Teacher.query.filter_by(email=session['email_for_password_reset']).first()
-						t.phash = bcrypt.generate_password_hash(request.form['password1'], 14)
+						t.setpassword(request.form['password1'])
 						db.session.commit()
 
 						return redirect(url_for("route_login"))
@@ -774,7 +780,7 @@ def route_invited_signup(email):
 
 		t.firstname = request.form["firstname"]
 		t.lastname = request.form["lastname"]
-		t.password = bcrypt.generate_password_hash(request.form['password'], 14)
+		t.setpassword(request.form['password'])
 
 		### try to commit changes to the db
 		try:
