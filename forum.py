@@ -694,7 +694,7 @@ def route_home_grade(grade):
 @methodTimer
 @requireLogin
 def route_home_general():
-	posts = Post.query.filter_by(firstname=str(session['user'].school.id)).order_by(Post.id.desc())
+	posts = Post.query.filter_by(firstname=str(session['user'].school_id)).order_by(Post.id.desc())
 
 	return render_template("template_home_general_discussion.html", posts=posts)
 
