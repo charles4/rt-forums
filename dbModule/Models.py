@@ -3,6 +3,7 @@ from datetime import datetime
 from flask.ext.sqlalchemy import SQLAlchemy
 from flaskext.bcrypt import Bcrypt 
 
+bcrypt = Bcrypt()
 db = SQLAlchemy()
 
 ###### define database structure ####
