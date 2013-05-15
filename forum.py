@@ -148,6 +148,13 @@ def saveAvatar(teacher, request):
 def logout():
 	session.pop('user', None)
 
+def createGeneralDiscussion(school):
+	db.session.add(Student(firstname=str(school.id), lastname="General Discussion", grade=None))
+	try:
+		db.session.commit()
+	except exc.SQLAlchemyError, e:
+		print str(e)
+
 def createGrades(school):
 	db.session.add(Grade("Kindergarden", 0, school))
 	db.session.add(Grade("First Grade", 1, school))
@@ -527,6 +534,10 @@ def route_register():
 		### try to create grades for the school
 		createGrades(s)
 
+		### create general discussion section for the school
+		createGeneralDiscussion(s)
+
+
 		### log user in and redirect to homepage
 		user = Teacher.query.filter_by(email=t.email).first()
 		session['user'] = user
@@ -678,6 +689,84 @@ def route_home_grade(grade):
 
 	### sort here to ensure something doesn't get misordered by for loops
 	return render_template("template_home_grade.html", grade=g, students=sorted(allowed_students, key=lambda student:student.lastname))
+
+@app.route("/home/general-discussion/")
+@methodTimer
+@requireLogin
+def route_home_general():
+	posts = Post.query.filter_by(firstname=str(session['user'].school.id)).order_by(Post.id.desc())
+
+	return render_template("template_home_general_discussion.html", posts=posts)
+
+@app.route("/home/general-discussion/compose/", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_general_compose():
+	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
+
+	if request.method == "POST":
+		if not request.form['title']:
+			flash("Please include a title for your new post.")
+			return render_template("template_home_general_discussion_compose.html", student=s)
+		if not request.form['body']:
+			flash("Please include something in the body of your new post.")
+			return render_template("template_home_general_discussion_compose.html", student=s)
+
+		p = Post(title=request.form['title'], teacher=session['user'], student=s)
+		db.session.add( p )
+
+		c = Comment(content=request.form['body'], teacher=session['user'], post=p)
+		db.session.add( c )
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error creating your post: " + str(e))
+			return render_template("template_home_general_discussion_compose.html", student=s)
+
+
+		return redirect(url_for('route_home_general'))
+
+	return render_template("template_home_general_discussion_compose.html")
+
+@app.route("/home/general-discussion/<post_id>/")
+@methodTimer
+@requireLogin
+def route_home_general_post(post_id):
+	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
+	p = Post.query.filter_by(id=post_id).first()
+	comments = Comment.query.filter_by(post_id=post_id).all()
+	
+	if request.method == "POST":
+
+		if not request.form['comment']:
+			flash("The comment you attempted to enter was blank.")
+			return render_template("template_home_general_discussion_post.html", post=p, comments=comments)
+
+		c = Comment(content=request.form['comment'], teacher=session['user'], post=p)
+		db.session.add( c )
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error adding your comment: " + str(e))
+			return render_template("template_home_general_discussion_post.html", post=p, comments=comments)
+
+	## requery comments to pick up the newly posted one (if there is one)
+	## not sure this step is necessary
+	comments = Comment.query.filter_by(post_id=post_id).all()
+
+	### remove all relevant comments from the unviewed comments table
+	for comment in comments:
+		uvc = UnviewedComment.query.filter_by(comment=comment, teacher_id=session['user'].id).first()
+		if uvc:
+			  db.session.delete(uvc)
+	db.session.commit()
+
+
+
+	return render_template("template_home_general_discussion_post.html")
+
 
 @app.route("/home/<grade>/<student_id>/", methods=['GET'])
 @methodTimer
@@ -1196,6 +1285,8 @@ def presets():
 
 	createGrades(school)
 
+	createGeneralDiscussion(school)
+
 	teacher = Teacher(email="demo@demo.com", school=school, key=None, firstname="Gandalf", lastname="Gray", password="demo", secretquestion=None, secretanswer=None, isAdmin=True, create_date=None)
 	db.session.add(teacher)
 	db.session.commit()
@@ -1214,7 +1305,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	#presets()
+	presets()
 
 	app.debug = True
 	app.run()

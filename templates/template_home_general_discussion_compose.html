@@ -1,0 +1,33 @@
+{% extends "template_master.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+	{{ super() }}
+	<style>
+		.form{
+			width:100%;
+		}
+	</style>
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li><a href="/home/general-discussion/">General Discussion</a> <span class="divider">/</span></li>
+    <li class='active'>Compose a post</li>
+    </ul>
+{% endblock %}
+{% block content %}
+
+	<h1>Compose <small>a post for the General Discussion</small></h1>
+	<form method="POST">
+		<label for='title'>Title:</label>
+		<input type='text' name='title' class='form'></input>
+		<label for='body' >Write your post here:</label>
+		<textarea name="body" class='form'></textarea>
+		<button>Post</button>
+	</form>
+{% endblock %}	

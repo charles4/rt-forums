@@ -1,0 +1,28 @@
+{% extends "template_master.html" %}
+{% block title %}General Discussion{% endblock %}
+
+{% block head %}
+	{{ super() }}
+{% endblock %}
+
+{% block messages %}
+	{{ super() }}
+{% endblock %}
+{% block breadcrumbs %}
+	<ul class="breadcrumb">
+    <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
+    <li class='active'>General Discussion</li>
+    </ul>
+{% endblock %}
+{% block content %}
+	
+	<h3><small>The</small> General Discussion <small> forum.</small></h3>
+	<a href='/home/general-discussion/compose'><button class='btn'>Compose Post</button></a>
+	<ul class='no-dots'>
+		{% for post in posts %}
+			<li><a href='/home/general-discussion/{{ post.id }}'><h4>{{ post.title }}</a> <small> created at {{ post.created }}, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
+		{% else %}
+			<li>No posts found.</li>
+		{% endfor %}
+	</ul>
+{% endblock %}
