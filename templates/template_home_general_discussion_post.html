@@ -7,6 +7,7 @@
 		.form{
 			width:100%;
 		}
+
 		</style>
 {% endblock %}
 
@@ -16,14 +17,13 @@
 {% block breadcrumbs %}
 	<ul class="breadcrumb">
     <li><span class="divider">/</span><a href="/home">Home</a> <span class="divider">/</span></li>
-    <li><a href="/home/{{ post.student.grade.name }}">{{ post.student.grade.name }}</a> <span class="divider">/</span></li>
-    <li><a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}'>{{ post.student.firstname }} {{ post.student.lastname }}</a> <span class="divider">/</span></li>
+    <li><a href="/home/general-discussion/">General Discussion</a> <span class="divider">/</span></li>
     <li class='active'>{{ post.title }}</li>
     </ul>
 {% endblock %}
 {% block content %}
 
-			<h3>{{ post.title }} <small>by {{ post.author.firstname }} {{ post.author.lastname }} about <a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}'>{{ post.student.firstname }} {{ post.student.lastname }}</a>.</small></h3>
+			<h3>{{ post.title }} <small>by {{ post.author.firstname }} {{ post.author.lastname }} in <a href="/home/general-discussion/">General Discussion</a>.</small></h3>
 			<ul class='no-dots'>
 			{% for comment in comments %}
 				<li class='padding-ten'>
@@ -37,7 +37,7 @@
 								{{ comment.author.firstname }} {{ comment.author.lastname }} 
 								<small> wrote at {{ comment.created }}
 								{% if comment.author.id == session.user.id %}
-									<a href='/home/{{ post.student.grade.name }}/{{ post.student.id }}/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
+									<a href='/home/general-discussion/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
 								{% endif %}
 								</small>
 							</h4>

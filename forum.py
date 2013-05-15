@@ -694,7 +694,8 @@ def route_home_grade(grade):
 @methodTimer
 @requireLogin
 def route_home_general():
-	posts = Post.query.filter_by(firstname=str(session['user'].school_id)).order_by(Post.id.desc())
+	db.session.add(session['user'])
+	posts = Post.query.filter_by(student_id=str(session['user'].school_id)).order_by(Post.id.desc())
 
 	return render_template("template_home_general_discussion.html", posts=posts)
 
@@ -702,6 +703,7 @@ def route_home_general():
 @methodTimer
 @requireLogin
 def route_home_general_compose():
+	db.session.add(session['user'])
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
 
 	if request.method == "POST":
@@ -715,7 +717,7 @@ def route_home_general_compose():
 		p = Post(title=request.form['title'], teacher=session['user'], student=s)
 		db.session.add( p )
 
-		c = Comment(content=request.form['body'], teacher=session['user'], post=p)
+		c = Comment(content=request.form['body'], teacher=session['user'], teachers=Teacher.query.filter_by(school_id=session['user'].school_id).all(), post=p)
 		db.session.add( c )
 
 		try:
@@ -729,10 +731,11 @@ def route_home_general_compose():
 
 	return render_template("template_home_general_discussion_compose.html")
 
-@app.route("/home/general-discussion/<post_id>/")
+@app.route("/home/general-discussion/<post_id>/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
 def route_home_general_post(post_id):
+	db.session.add(session['user'])
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
 	p = Post.query.filter_by(id=post_id).first()
 	comments = Comment.query.filter_by(post_id=post_id).all()
@@ -743,7 +746,7 @@ def route_home_general_post(post_id):
 			flash("The comment you attempted to enter was blank.")
 			return render_template("template_home_general_discussion_post.html", post=p, comments=comments)
 
-		c = Comment(content=request.form['comment'], teacher=session['user'], post=p)
+		c = Comment(content=request.form['comment'], teacher=session['user'], teachers=Teacher.query.filter_by(school_id=session['user'].school_id).all(), post=p)
 		db.session.add( c )
 
 		try:
@@ -765,8 +768,35 @@ def route_home_general_post(post_id):
 
 
 
-	return render_template("template_home_general_discussion_post.html")
+	return render_template("template_home_general_discussion_post.html", comments=comments, post=p)
 
+@app.route("/home/general-discussion/<post_id>/<comment_id>/edit/", methods=['GET', 'POST'])
+@methodTimer
+@requireLogin
+def route_home_general_post_comment_edit(post_id, comment_id):
+	p = Post.query.filter_by(id=post_id).first()
+	c = Comment.query.filter_by(id=comment_id).first()
+
+	### check if user is owner of the comment
+	if c.author.id != session['user'].id:
+		abort(401)
+
+	if request.method == "POST":
+		if not request.form['comment']:
+			flash("The comment you entered was blank.")
+			return render_template("template_home_general_discussion_post_comment.html", comment=c)
+
+		c.content = request.form['comment']
+
+		try:
+			db.session.commit()
+		except exc.SQLAlchemyError, e:
+			flash("There was an error editing your comment: " + str(e))
+			return render_template("template_home_general_discussion_post_comment.html", comment=c)
+
+		return redirect(url_for("route_home_general_post", post_id=post_id))
+
+	return render_template("template_home_general_discussion_post_comment.html", comment=c, post=p)
 
 @app.route("/home/<grade>/<student_id>/", methods=['GET'])
 @methodTimer
@@ -795,7 +825,7 @@ def route_home_grade_student_post(grade, student_id, post_id):
 			flash("The comment you attempted to enter was blank.")
 			return render_template("template_home_grade_student_post.html", post=p, comments=comments)
 
-		c = Comment(content=request.form['comment'], teacher=session['user'], post=p)
+		c = Comment(content=request.form['comment'], teacher=session['user'], teachers=Teacher.query.filter_by(school_id=session['user'].school_id).all(), post=p)
 		db.session.add( c )
 
 		try:
@@ -868,7 +898,7 @@ def route_home_grade_student_compose(grade, student_id):
 		p = Post(title=request.form['title'], teacher=session['user'], student=s)
 		db.session.add( p )
 
-		c = Comment(content=request.form['body'], teacher=session['user'], post=p)
+		c = Comment(content=request.form['body'], teacher=session['user'], teachers=Teacher.query.filter_by(school_id=session['user'].school_id).all(), post=p)
 		db.session.add( c )
 
 		try:
@@ -1277,7 +1307,7 @@ def route_mailtest():
 
 def presets():
 	db.app = app
-	
+
 	db.drop_all()
 	db.create_all()
 
@@ -1307,7 +1337,7 @@ def presets():
 
 
 if __name__ == "__main__":
-	presets()
+	#presets()
 
 	app.debug = True
 	app.run()

@@ -143,7 +143,7 @@ class Comment(db.Model):
 	post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
 	post = db.relationship('Post', backref=db.backref('comments',lazy='dynamic'))
 
-	def __init__(self, content, teacher, post, create_date=None):
+	def __init__(self, content, teacher, teachers, post, create_date=None):
 		self.content = content
 		self.author = teacher
 		self.post = post
@@ -152,9 +152,8 @@ class Comment(db.Model):
 		self.created = create_date
 
 		### for each teacher create a unviewed comment
-		teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 		for t in teachers:
-			if t.id != session['user'].id:
+			if t.id != self.author_id:
 				uvc = UnviewedComment(self, t)
 				db.session.add(uvc)
 		db.session.commit()

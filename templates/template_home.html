@@ -25,18 +25,15 @@
 		</ul>
 	<h4>Forums</h4>
 	<ul class='no-dots well'>
+		<li><b><a href="/home/general-discussion/">General Discussion</a></b></li>
+	</ul>
+	<ul class='no-dots well'>
 		{% for grade in grades %}
-			<li><a href='/home/{{ grade.name }}'>{{ grade.name }} forums</a></li>
+			<li><b><a href='/home/{{ grade.name }}'>{{ grade.name }} forums</a></b></li>
 		{% else %}
 			<li>You don't have access to any forums yet.</li>
 		{% endfor %}
 	</ul>
 
 
-	{% if session.user.isAdmin == "1" %}
-		<h4>Administration</h4>
-		<ul class='no-dots well'>
-			<li><a href='/home/admin'>Admin</a></li>
-		</ul>
-	{% endif %}
 {% endblock %}
