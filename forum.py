@@ -1276,6 +1276,7 @@ def route_mailtest():
 
 
 def presets():
+	db.init_app(app)
 	db.drop_all()
 	db.create_all()
 
