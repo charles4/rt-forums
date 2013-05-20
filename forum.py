@@ -1201,10 +1201,11 @@ def route_home_admin_students_graduate():
 @requireLogin
 def route_home_help():
 	if request.method == "POST":
-			content = request.form["question"]
-			msg = Message(content,
+			subjectline = "Roundtableforums Help Message"
+			msg = Message(subjectline,
                   sender=session['user'].email,
                   recipients=["charles4@email.arizona.edu"])
+			msg.body = request.form['question']
 			mail.send(msg)
 			flash("Your message was sent successfully.")
 	return render_template("template_home_help.html")
