@@ -18,10 +18,17 @@
     </ul>
 {% endblock %}
 {% block content %}
-	{% block messages %}
-		{{ super() }}
-	{% endblock %}
+
 	<div class='span11 well'>
+		{% block messages %}
+			{{ super() }}
+		{% endblock %}
+		<h2>Send me a message</h2>
+		<form method="POST" action="/home/help/">
+			<label for="question">Type your message or question here:</label>
+			<textarea name="question" class='form'></textarea>
+			<button class="btn-primary">Send</button>
+		</form>
 		<h2>Helpful Points</h2>
 		<h3>The General Idea</h3>
 			<p>The general idea behind Round Table Forums' setup is this:</p>

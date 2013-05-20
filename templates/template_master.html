@@ -7,6 +7,39 @@
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
     <script src="/static/jquery.1.9.js"></script>
     <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            //for each .date span create a utc date object and translate to localtime
+            $.each($(".date"), function(){
+
+                var halfs = this.innerHTML.split(" ");
+                
+                var yearmonthday = halfs[0].split("-");
+                var year = yearmonthday[0];
+                var month = yearmonthday[1];
+                var day = yearmonthday[2];
+
+                //hour:minute:second
+                var hms = halfs[1].split(":");
+                var hour = hms[0];
+                var minute = hms[1];
+                var second = hms[2];
+
+                d = new Date();
+                d.setUTCFullYear(year);
+                d.setUTCMonth(month);
+                d.setUTCDate(day);
+                d.setUTCHours(hour);
+                d.setUTCMinutes(minute);
+                d.setUTCSeconds(second);
+
+                var options = { hour12:true, month:"long", day:"long" };
+
+                $(this).html(d.toLocaleDateString());
+
+            });
+        });
+    </script>
     {% endblock %}
 
     <style>

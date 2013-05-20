@@ -1196,10 +1196,17 @@ def route_home_admin_students_graduate():
 	flash("All students have been graduated to the next grade level.")
 	return redirect(url_for("route_home_admin_students"))
 
-@app.route("/home/help/")
+@app.route("/home/help/", methods=['POST', 'GET'])
 @methodTimer
 @requireLogin
 def route_home_help():
+	if request.method == "POST":
+			content = request.form["question"]
+			msg = Message(content,
+                  sender=session['user'].email,
+                  recipients=["charles4@email.arizona.edu"])
+			mail.send(msg)
+			flash("Your message was sent successfully.")
 	return render_template("template_home_help.html")
 
 
@@ -1268,8 +1275,6 @@ def route_home_search():
 			counter = 0
 			pagenumber += 1
 
-	print str(pages)
-
 	### check if PAGE is out of range
 	if PAGE >= len(pages):
 		abort(404)
@@ -1307,6 +1312,8 @@ def route_mailtest():
 
 
 def presets():
+	### this line is needed to make the drop_all and create_all statements work
+	### when the db class definitions are in another module
 	db.app = app
 
 	db.drop_all()

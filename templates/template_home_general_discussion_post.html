@@ -35,7 +35,7 @@
 
 							<h4 class='media-heading'><a name="comment-{{ comment.id }}"></a>
 								{{ comment.author.firstname }} {{ comment.author.lastname }} 
-								<small> wrote at {{ comment.created }}
+								<small> wrote at <span class='date'>{{ comment.created }}</span>
 								{% if comment.author.id == session.user.id %}
 									<a href='/home/general-discussion/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
 								{% endif %}

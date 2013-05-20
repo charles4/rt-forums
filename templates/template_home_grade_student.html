@@ -17,11 +17,11 @@
 {% endblock %}
 {% block content %}
 	
-	<h3><small>A forum about</small> {{ student.firstname }} {{ student.lastname }} <small> in the {{ student.grade.name }}.</small></h3>
+	<h3><small>A forum about</small> {{ student.firstname }} {{ student.lastname }} <small> in {{ student.grade.name }}.</small></h3>
 	<a href='/home/{{ student.grade.name }}/{{ student.id }}/compose'><button class='btn'>Compose Post</button></a>
 	<ul class='no-dots'>
 		{% for post in posts %}
-			<li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'><h4>{{ post.title }}</a> <small> created at {{ post.created }}, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
+			<li><a href='/home/{{ student.grade.name }}/{{ student.id }}/{{ post.id }}'><h4>{{ post.title }}</a> <small> created on <span class='date'>{{ post.created }}</span>, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
 		{% else %}
 			<li>No posts found.</li>
 		{% endfor %}

@@ -18,7 +18,7 @@
 	<h4>Unread Comments and Posts</h4>
 		<ul class='no-dots well'>
 			{% for uv in unviewed %}
-				<li><small>{{ uv.comment.created }}</small> - <a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}/#comment-{{ uv.comment.id }}'>{{ uv.comment.content[:100] }}</a> by <small>{{ uv.comment.author.firstname }} {{ uv.comment.author.lastname }}.</small></li>
+				<li><small><span class='date'>{{ uv.comment.created }}</span></small> - <a href='/home/{{ uv.comment.post.student.grade.name }}/{{ uv.comment.post.student_id }}/{{ uv.comment.post_id }}/#comment-{{ uv.comment.id }}'>{{ uv.comment.content[:100] }}</a> by <small>{{ uv.comment.author.firstname }} {{ uv.comment.author.lastname }}.</small></li>
 			{% else %}
 				<li>You have no unviewed comments or posts.</li>
 			{% endfor %}

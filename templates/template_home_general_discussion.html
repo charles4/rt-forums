@@ -20,7 +20,7 @@
 	<a href='/home/general-discussion/compose'><button class='btn'>Compose Post</button></a>
 	<ul class='no-dots'>
 		{% for post in posts %}
-			<li><a href='/home/general-discussion/{{ post.id }}'><h4>{{ post.title }}</a> <small> created at {{ post.created }}, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
+			<li><a href='/home/general-discussion/{{ post.id }}'><h4>{{ post.title }}</a> <small> created on <span class='date'>{{ post.created }}</span>, by {{ post.author.firstname }} {{ post.author.lastname }}.</small></h4></li>
 		{% else %}
 			<li>No posts found.</li>
 		{% endfor %}
