@@ -1381,16 +1381,6 @@ def route_home_search():
 														next_page = next_page,
 														results=sorted(pages[PAGE].results, key=lambda result:result.score))
 
-@app.route("/mailtest")
-@methodTimer
-def route_mailtest():
-	msg = Message("Hello charles",
-                  sender="invite@roundtableforums.net",
-                  recipients=["charles4@email.arizona.edu"])
-	mail.send(msg)
-
-	return str(msg)
-
 
 def presets():
 	### this line is needed to make the drop_all and create_all statements work
