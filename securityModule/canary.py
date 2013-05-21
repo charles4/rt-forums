@@ -20,5 +20,12 @@ def checkCanary(session, request):
 		if "canary" in request.form:
 			if session['canary'] == request.form['canary']:
 				return True
+			else:
+				print "Canary comparison failed."
+		else:
+			print "No canary in request.form"
+	else:
+		print "No canary in session."
 
+	## fallthrough
 	return False
