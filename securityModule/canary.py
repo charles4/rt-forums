@@ -16,7 +16,7 @@ def createCanary(session):
 
 def checkCanary(session, request):
 	""" check the canary key in session against a request """
-	if "canary_key" in session:
+	if "canary" in session:
 		if "canary" in request.form:
 			if session['canary'] == request.form['canary']:
 				return True
