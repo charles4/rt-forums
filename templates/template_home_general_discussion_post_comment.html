@@ -27,6 +27,7 @@
 	<form method="POST">
 		<label for='comment' >Your comment:</label>
 		<textarea name="comment" class='form'>{{ comment.content }}</textarea>
+		<input type='hidden' name='canary' value='{{ canary }}'></input>
 		<button class='btn'>Save</button>
 	</form>
 

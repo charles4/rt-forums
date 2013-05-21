@@ -27,6 +27,7 @@
 	<p>This will graduate all students to the next respective grade level.</p>
 	<p>All students leaving twelfth grade will be placed into a general grade called "Graduated"</p>
 	<form method="POST" action="/home/admin/students/graduate/">
+		<input name='canary' type='hidden' value='{{ canary }}'></input>
 		<button class='btn'>Graduate Now</button>
 	</form>
 
@@ -35,6 +36,7 @@
 	<p>ex. "Bond James 5, Duck Donald 2, ..."
 	<form method="POST">
 		<textarea name="students" class='form'></textarea>
+		<input type='hidden' name='canary' value='{{ canary }}'></input>
 		<button class='btn'>Create</button>
 	</form>
 
@@ -42,7 +44,7 @@
 		<b> {{ grade.grade.name }} </b>
 		<ul>
 		{% for student in grade.students %}
-			<li>{{ student.lastname }}, {{ student.firstname }} (<a href="/home/admin/students/delete/{{ student.id }}/">delete</a>)</li>
+			<li>{{ student.lastname }}, {{ student.firstname }} (<a href="/home/admin/students/delete/{{ student.id }}/{{ canary }}">delete</a>)</li>
 		{% else %}
 			<li>No students found</li>
 		{% endfor %}

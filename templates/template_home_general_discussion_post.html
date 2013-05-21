@@ -35,12 +35,11 @@
 
 							<h4 class='media-heading'><a name="comment-{{ comment.id }}"></a>
 								{{ comment.author.firstname }} {{ comment.author.lastname }} 
-								<small> wrote at <span class='date'>{{ comment.created }}</span>
-								{% if comment.author.id == session.user.id %}
-									<a href='/home/general-discussion/{{post.id}}/{{ comment.id }}/edit'>Edit</a>
-								{% endif %}
-								</small>
+								<small> wrote on <span class='date'>{{ comment.created }}</span></small>
 							</h4>
+							{% if comment.author.id == session.user.id %}
+								(<a href='/home/general-discussion/{{post.id}}/{{ comment.id }}/edit'>Edit</a>)
+							{% endif %}
 							{% for line in comment.content.splitlines() %}
 								{{ line }}<br>
 							{% endfor %}
@@ -55,6 +54,7 @@
 					<form method="POST">
 					<textarea name='comment' class='form'></textarea>
 					<button class='btn'>Post Comment</button>
+					<input type='hidden' name='canary' value='{{ canary }}'></input>
 					</form>
 				</li>
 			</ul>

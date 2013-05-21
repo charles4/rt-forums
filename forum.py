@@ -14,6 +14,7 @@ import random
 
 #### import database modeule
 from dbModule import *
+from securityModule import *
 
 #### session management stuff
 import redis
@@ -370,13 +371,16 @@ def uploaded_file(filename):
 @app.route("/", methods=['GET', 'POST'])
 def route_login():
 	if request.method == "POST":
+		### first check canary
+		if not checkCanary(session=session, request=request):
+			abort(401)
+		### fetch user info
 		user = Teacher.query.filter_by(email=request.form['email']).first()
 		if user != None:
 			if bcrypt.check_password_hash(user.phash, request.form['password']):
 				session['user'] = user
 				session['grades'] = Grade.query.filter_by(school_id=session['user'].school_id).all()
 				session['school'] = School.query.filter_by(id=session['user'].school_id).first()
-				print session['school']
 				return redirect(url_for('route_home'))
 
 			else:
@@ -386,7 +390,10 @@ def route_login():
 			flash("The email address you entered was not found.")
 			return render_template("template_login.html")
 	else:
-		return render_template("template_login.html")
+		### if not post then GET
+		### create canary
+		canary = createCanary(session=session)
+		return render_template("template_login.html", canary=canary)
 
 @app.route("/login/")
 def route_login_redirect():
@@ -399,10 +406,8 @@ def route_logout():
 
 @app.route("/passwordreset/", methods=['GET'])
 def route_passwordreset_step1():
-	### generate onetime unique key
-	base = "abcdefghijklmnopqrstuvwxyz123456789"
-	salt = ''.join(random.sample(base, len(base)))
-	session['skey'] = hashlib.sha256(salt).hexdigest()
+	### generate unique key
+	session['skey'] = generateKey()
 
 	return render_template("template_resetpassword_step1.html", secret_key=session['skey'])
 
@@ -416,11 +421,9 @@ def route_passwordreset_step2():
 				t = Teacher.query.filter_by(email=request.form['email']).first()
 				if t != None:
 					### generate a code and email it to the user
-					base = "abcdefghijklmnopqrstuvwxyz123456789.!@#$%^"
-					salt = ''.join(random.sample(base, len(base)))
 					subjectline = "Password reset code."
 					address = request.form['email']
-					code = hashlib.sha256(salt).hexdigest()[:5]
+					code = generateKey()[:5]
 
 					msg = Message(subjectline,
 				      sender="password@roundtableforums.net",
@@ -431,6 +434,7 @@ def route_passwordreset_step2():
 					### store email in session
 					session['email_for_password_reset'] = address
 					session['password_reset_code'] = code
+
 					return render_template("template_resetpassword_step2.html", email=request.form['email'], secret_key=session['skey'])
 				else:
 					flash("The email you entered does not appear to belong to an Round Table Forum account.")
@@ -442,10 +446,9 @@ def route_passwordreset_step2():
 def route_passwordreset_step3():
 
 	if request.method == "POST":
-		if request.form['secret_key']:
-			if request.form['code']:
+		if 'secret_key' in request.form:
+			if 'code' in request.form:
 				if request.form['secret_key'] == session['skey']:
-					#if request.form['code'] == session['code']:
 					if request.form["code"] == session['password_reset_code']:
 						return render_template("template_resetpassword_step3.html", secret_key=session['skey'], code=session['password_reset_code'])
 
@@ -477,6 +480,9 @@ def route_password_reset_process():
 @app.route("/signup/", methods=['GET', 'POST'])
 def route_register():
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session=session, request=request):
+			abort(401)
 		### validate forms
 		if not request.form['schoolname']:
 			flash("Please enter the name of your school.")
@@ -544,7 +550,11 @@ def route_register():
 		session['school'] = School.query.filter_by(id=s.id).first()
 		return redirect(url_for('route_home'))
 
-	return render_template("template_registration.html")
+	## if not POST then GET
+	# create canary
+	canary = createCanary(session=session)
+
+	return render_template("template_registration.html", canary=canary)
 
 @app.route("/invite/<email>/", methods=['GET', 'POST'])
 @methodTimer
@@ -565,6 +575,11 @@ def route_invited_signup(email):
 		abort(401)
 
 	if request.method == "POST":
+		#check canary
+		if not checkCanary(session=session, request=request):
+			abort(401)
+
+		#validate forms
 		if not request.form['firstname']:
 			flash("Please enter your firstname.")
 			return render_template("template_registration.html")
@@ -601,8 +616,10 @@ def route_invited_signup(email):
 		session['school'] = School.query.filter_by(id=s.id).first()
 		return redirect(url_for('route_home'))
 
+	# create canary
+	canary = createCanary(session)
 
-	return render_template("template_invited_user_registration.html", emailaddress=email)
+	return render_template("template_invited_user_registration.html", emailaddress=email, canary=canary)
 
 
 @app.route("/home/")
@@ -652,12 +669,18 @@ def route_home():
 def route_home_settings():
 
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session=session, request=request):
+			abort(401)
+		# pull teacher and set and save avatar
 		teacher = Teacher.query.filter_by(id=session['user'].id).first()
 		if 'avatar' in request.files:
 			saveAvatar(teacher=teacher, request=request)
 			flash("Successfully saved avatar.")
 
-	return render_template("template_home_settings.html")
+	#create canary
+	canary = createCanary(session)
+	return render_template("template_home_settings.html", canary=canary)
 
 @app.route("/home/<grade>/")
 @methodTimer
@@ -705,6 +728,10 @@ def route_home_general_compose():
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
 
 	if request.method == "POST":
+		#check canary
+		if not checkCanary(session, request):
+			abort(401)
+		#validate forms
 		if not request.form['title']:
 			flash("Please include a title for your new post.")
 			return render_template("template_home_general_discussion_compose.html", student=s)
@@ -727,7 +754,9 @@ def route_home_general_compose():
 
 		return redirect(url_for('route_home_general'))
 
-	return render_template("template_home_general_discussion_compose.html")
+	#create canary
+	canary = createCanary(session)
+	return render_template("template_home_general_discussion_compose.html", canary=canary)
 
 @app.route("/home/general-discussion/<post_id>/", methods=['GET', 'POST'])
 @methodTimer
@@ -739,6 +768,9 @@ def route_home_general_post(post_id):
 	comments = Comment.query.filter_by(post_id=post_id).all()
 	
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session, request):
+			abort(401)
 
 		if not request.form['comment']:
 			flash("The comment you attempted to enter was blank.")
@@ -764,9 +796,10 @@ def route_home_general_post(post_id):
 			  db.session.delete(uvc)
 	db.session.commit()
 
+	# create canary
+	canary = createCanary(session)
 
-
-	return render_template("template_home_general_discussion_post.html", comments=comments, post=p)
+	return render_template("template_home_general_discussion_post.html", comments=comments, post=p, canary=canary)
 
 @app.route("/home/general-discussion/<post_id>/<comment_id>/edit/", methods=['GET', 'POST'])
 @methodTimer
@@ -780,6 +813,10 @@ def route_home_general_post_comment_edit(post_id, comment_id):
 		abort(401)
 
 	if request.method == "POST":
+		#check canary
+		if not checkCanary(session, request):
+			abort(401)
+		#validate form
 		if not request.form['comment']:
 			flash("The comment you entered was blank.")
 			return render_template("template_home_general_discussion_post_comment.html", comment=c)
@@ -793,8 +830,9 @@ def route_home_general_post_comment_edit(post_id, comment_id):
 			return render_template("template_home_general_discussion_post_comment.html", comment=c)
 
 		return redirect(url_for("route_home_general_post", post_id=post_id))
-
-	return render_template("template_home_general_discussion_post_comment.html", comment=c, post=p)
+	#create canary
+	canary = createCanary(session)
+	return render_template("template_home_general_discussion_post_comment.html", comment=c, post=p, canary=canary)
 
 @app.route("/home/<grade>/<student_id>/", methods=['GET'])
 @methodTimer
@@ -859,6 +897,10 @@ def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comme
 		abort(401)
 
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session, request):
+			abort(401)
+		# validate form
 		if not request.form['comment']:
 			flash("The comment you entered was blank.")
 			return render_template("template_home_grade_student_post_comment.html", comment=c)
@@ -873,7 +915,8 @@ def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comme
 
 		return redirect(url_for("route_home_grade_student_post", grade=grade, student_id=student_id, post_id=post_id))
 
-	return render_template("template_home_grade_student_post_comment.html", comment=c, student=s, post=p)
+	canary = createCanary(session)
+	return render_template("template_home_grade_student_post_comment.html", comment=c, student=s, post=p, canary=canary)
 
 
 
@@ -886,6 +929,10 @@ def route_home_grade_student_compose(grade, student_id):
 	g = Grade.query.filter_by(name=grade)
 
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session, request):
+			abort(401)
+		# validate form
 		if not request.form['title']:
 			flash("Please include a title for your new post.")
 			return render_template("template_home_grade_student_compose.html", student=s)
@@ -908,7 +955,8 @@ def route_home_grade_student_compose(grade, student_id):
 
 		return redirect(url_for('route_home_grade_student', grade=grade, student_id=student_id))
 
-	return render_template("template_home_grade_student_compose.html", student=s)
+	canary = createCanary(session)
+	return render_template("template_home_grade_student_compose.html", student=s, canary=canary)
 
 @app.route("/home/admin/")
 @methodTimer
@@ -926,7 +974,11 @@ def route_home_admin_teachers():
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
 
 	if request.method == "POST":
-		if request.form["teachers"]:
+		# check canary
+		if not checkCanary(session, request):
+			abort(401)
+
+		if "teachers" in request.form:
 			emails = request.form['teachers'].split(",")
 			for email in emails:
 				## strip whitespace
@@ -968,13 +1020,17 @@ http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
 				mail.send(msg)
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id).order_by(Teacher.email)
-	return render_template("template_admin_teachers.html", teachers=teachers)
+	canary = createCanary(session)
+	return render_template("template_admin_teachers.html", teachers=teachers, canary=canary)
 
 @app.route("/home/admin/teachers/delete/", methods=['POST'])
 @methodTimer
 @requireLogin
 @requireAdmin
 def route_home_admin_teachers_delete():
+	# check canary
+	if not checkCanary(session, request):
+		abort(401)
 	### check teacher exists
 	t = Teacher.query.filter_by(id=request.form['teacher_id']).first()
 	if not t:
@@ -991,6 +1047,10 @@ def route_home_admin_teachers_delete():
 @requireLogin
 @requireAdmin
 def route_home_admin_teachers_resend():
+	# check canary
+	if not checkCanary(session, request):
+		abort(401)
+
 	t = Teacher.query.filter_by(id=request.form['teacher_id']).first()
 
 	subjectline = "You have been invited to join Round Table Forums by " + session['user'].firstname + " " + session['user'].lastname + "."
@@ -1019,7 +1079,9 @@ def route_home_admin_teachers_teacher(teacher_id):
 	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
 
 	if request.method == "POST":
-		print str(request.form)
+		#check canary
+		if not checkCanary(session, request):
+			abort(401)
 		### clear out users previous permissions
 		pts = teacher.tokens.all()
 		for p in pts:
@@ -1083,24 +1145,29 @@ def route_home_admin_teachers_teacher(teacher_id):
 			gb.permissions.append( Permission( student ) )
 		gradelist.append(gb)
 
-	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist)
+	canary = createCanary(session)
+	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist, canary=canary)
 
-@app.route("/home/admin/teachers/<teacher_id>/makeadmin/", methods=['POST', 'GET'])
+@app.route("/home/admin/teachers/<teacher_id>/makeadmin/", methods=['POST'])
 @methodTimer
 @requireLogin
 @requireAdmin
 def route_home_admin_teachers_teacher_makeadmin(teacher_id):
+	if not checkCanary(session, request):
+		abort(401)
 	teacher = Teacher.query.filter_by(id=teacher_id).first()
 	teacher.isAdmin = True
 	db.session.commit()
 
 	return redirect(url_for("route_home_admin_teachers_teacher", teacher_id=teacher_id))
 
-@app.route("/home/admin/teachers/<teacher_id>/removeadmin/", methods=['POST', 'GET'])
+@app.route("/home/admin/teachers/<teacher_id>/removeadmin/", methods=['POST'])
 @methodTimer
 @requireLogin
 @requireAdmin
 def route_home_admin_teachers_teacher_removeadmin(teacher_id):
+	if not checkCanary(session, request):
+		abort(401)
 	teacher = Teacher.query.filter_by(id=teacher_id).first()
 	teacher.isAdmin = False
 	db.session.commit()
@@ -1113,6 +1180,9 @@ def route_home_admin_teachers_teacher_removeadmin(teacher_id):
 @requireAdmin
 def route_home_admin_students():
 	if request.method == "POST":
+		# check canary
+		if not checkCanary(session, request):
+			abort(401)
 		### parse input to create new students
 		students = request.form['students'].split(",")
 		for student in students:
@@ -1155,13 +1225,19 @@ def route_home_admin_students():
 	for grade in grades:
 		s_by_g.append(GradeBag(grade=grade))
 	
-	return render_template("template_admin_students.html", students_by_grade=s_by_g)
+	# create canary
+	canary = createCanary(session)
+	return render_template("template_admin_students.html", students_by_grade=s_by_g, canary=canary)
 
-@app.route("/home/admin/students/delete/<student_id>/", methods=['GET', 'POST'])
+@app.route("/home/admin/students/delete/<student_id>/<secret_key>", methods=['GET'])
 @methodTimer
 @requireLogin
 @requireAdmin
-def route_home_admin_students_delete(student_id):
+def route_home_admin_students_delete(student_id, secret_key):
+
+	## custom canary for GET
+	if secret_key != session['canary']:
+		abort(401)
 
 	student = Student.query.filter_by(id=student_id).first()
 	db.session.delete(student)
@@ -1175,6 +1251,9 @@ def route_home_admin_students_delete(student_id):
 @requireLogin
 @requireAdmin
 def route_home_admin_students_graduate():
+	if not checkCanary(session, request):
+		abort(401)
+
 	grades = Grade.query.filter_by(school_id=session['user'].school_id).all()
 	for grade in grades:
 		if grade.numeric_repr < 13:
@@ -1197,15 +1276,19 @@ def route_home_admin_students_graduate():
 @methodTimer
 @requireLogin
 def route_home_help():
+
 	if request.method == "POST":
-			subjectline = "Roundtableforums Help Message"
-			msg = Message(subjectline,
-                  sender=session['user'].email,
-                  recipients=["charles4@email.arizona.edu"])
-			msg.body = request.form['question']
-			mail.send(msg)
-			flash("Your message was sent successfully.")
-	return render_template("template_home_help.html")
+		if not checkCanary(session, request):
+			abort(401)
+		subjectline = "Roundtableforums Help Message"
+		msg = Message(subjectline,
+              sender=session['user'].email,
+              recipients=["charles4@email.arizona.edu"])
+		msg.body = request.form['question']
+		mail.send(msg)
+		flash("Your message was sent successfully.")
+	canary = createCanary(session)
+	return render_template("template_home_help.html", canary=canary)
 
 
 

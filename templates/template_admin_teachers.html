@@ -28,6 +28,7 @@
 		<label for="teachers">Enter the emails of teachers you would like to invite.</label>
 		<label for="teachers">Use the format, "teacher@teacher.com, fake@email.com, another@fake.email.com, ..."
 		<textarea name="teachers" placeholder="Emails..." class='form'></textarea>
+		<input name='canary' type='hidden' value='{{ canary }}'></input>
 		<button class='btn'>Invite</button>
 	</form>
 	<h4>Manage</h4>
@@ -40,12 +41,14 @@
 					<div class='span3'>
 						<form method="POST" action='/home/admin/teachers/resend/'>
 							<input type='hidden' name='teacher_id' value="{{ teacher.id }}"></input>
+							<input name='canary' type='hidden' value='{{ canary }}'></input>
 							<button class='btn'>Resend Invite</button>
 						</form>	
 					</div>
 					<div class='span2'>
 						<form method='POST' action='/home/admin/teachers/delete/'>
 							<input type='hidden' name="teacher_id" value="{{ teacher.id }}"></input>
+							<input name='canary' type='hidden' value='{{ canary }}'></input>
 							<button class='btn'>Delete</button>
 						</form>
 					</div>
