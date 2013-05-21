@@ -12,11 +12,9 @@ from datetime import datetime
 import hashlib
 import random
 
-#### import custom modules
+#### import database modeule
 from dbModule import *
 from securityModule import *
-from wrapperModule import Wrappers
-from helperModule import General
 
 #### session management stuff
 import redis
@@ -54,11 +52,7 @@ mail = Mail(app)
 # this will replace the app's session handling
 KVSessionExtension(store, app)
 
-# instantiate custom wrappers
-wrappers = Wrappers(session, db)
 
-# instantiate help methods
-gen = General(session, db, app)
 
 
 ### none database classes
@@ -72,12 +66,305 @@ class Result(object):
 		self.type = mytype
 
 
+#### wrappers ####
 
+def methodTimer(function):
+	@wraps(function)
+	def decorated_view(*args, **kwargs):
+		t = time.time()
+		result = function(*args, **kwargs)
+		print function.__name__ + " took " + str(time.time() - t) + " seconds."
+		return result
+	return decorated_view
+
+def requireLogin(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		if 'user' in session:
+			return fn(*args, **kwargs)
+		return redirect(url_for("route_login"))
+	return decorated
+
+def requireAdmin(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		if "user" in session:
+			if session["user"].isAdmin == "1":
+				return fn(*args, **kwargs)
+		abort(401)
+
+	return decorated
+
+def requirePermission(fn):
+	@wraps(fn)
+	def decorated(*args, **kwargs):
+		teacher = session['user']
+		db.session.add(teacher)
+
+		allowed = teacher.tokens.all()
+		for token in allowed:
+			if str(token.student_id) == str(kwargs["student_id"]):
+				return fn(*args, **kwargs)
+
+		allowed = teacher.grade_tokens.all()
+		for token in allowed:
+			if str(token.grade.name) == str(kwargs["grade"]):
+				return fn(*args, **kwargs)
+
+		flash("You don't have permission to view the forum belonging to that student. Your school's admin can fix that.")
+		return redirect(url_for("route_home_grade", grade=kwargs["grade"]))
+	return decorated
+
+### General Methods ###
+
+def allowed_file(filename):
+	return "." in filename and \
+		filename.rsplit(".", 1)[1] in ALLOWED_EXTENSIONS
+
+def saveAvatar(teacher, request):
+	size = 64, 64
+	### get file obj from request ###
+	myfile = request.files['avatar']
+	if myfile and allowed_file (myfile.filename):
+		### setup filename and save to filesystem ####
+		filename = str(session['user'].id) + "_" + secure_filename(myfile.filename)
+		myfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+		### after saving re-open and create tiny version 
+		image = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+		image.thumbnail(size)
+		filename = str(session['user'].id) + "_thumbnail_" + secure_filename(myfile.filename)
+		image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+		### add filename to db
+		teacher.avatar = filename
+		db.session.commit()
+		### refresh teacher obj in session
+		session['user'] = teacher
+
+		return True
+
+	else:			
+		return False
+
+def logout():
+	session.pop('user', None)
+
+def createGeneralDiscussion(school):
+	db.session.add(Student(firstname=str(school.id), lastname="General Discussion", grade=None))
+	try:
+		db.session.commit()
+	except exc.SQLAlchemyError, e:
+		print str(e)
+
+def createGrades(school):
+	db.session.add(Grade("Kindergarden", 0, school))
+	db.session.add(Grade("First Grade", 1, school))
+	db.session.add(Grade("Second Grade", 2, school))
+	db.session.add(Grade("Third Grade", 3, school))
+	db.session.add(Grade("Fourth Grade", 4, school))
+	db.session.add(Grade("Fifth Grade", 5, school))
+	db.session.add(Grade("Sixth Grade", 6, school))
+	db.session.add(Grade("Seventh Grade", 7, school))
+	db.session.add(Grade("Eighth Grade", 8, school))
+	db.session.add(Grade("Ninth Grade", 9, school))
+	db.session.add(Grade("Tenth Grade", 10, school))
+	db.session.add(Grade("Eleventh Grade", 11, school))
+	db.session.add(Grade("Twelfth Grade", 12, school))
+	db.session.add(Grade("Graduated", 13, school))
+	try:
+		db.session.commit()
+	except exc.SQLAlchemyError, e:
+		print str(e)
+
+
+def levenshtein(s1, s2):
+	if len(s1) < len(s2):
+		return levenshtein(s2, s1)
+
+	# len(s1) >= len(s2)
+	if len(s2) == 0:	
+		return len(s1)
+
+	previous_row = xrange(len(s2) + 1)
+	for i, c1 in enumerate(s1):
+		current_row = [i + 1]
+		for j, c2 in enumerate(s2):
+			insertions = previous_row[j + 1] + 1 # j+1 instead of j since previous_row and current_row are one character longer
+			deletions = current_row[j] + 1       # than s2
+			substitutions = previous_row[j] + (c1 != c2)
+			current_row.append(min(insertions, deletions, substitutions))
+		previous_row = current_row
+
+	return previous_row[-1]
+
+
+def search_helper(keywords, teacher):
+## fetch all students teacher has access to
+	tokens = teacher.tokens.all()
+	gradetokens = teacher.grade_tokens.all()
+
+	### an array of all student ids current user has access to
+	ids = []
+	for t in tokens:
+		ids.append(t.student_id)
+
+	for gradetoken in gradetokens:
+		students = gradetoken.grade.students.all()
+		for student in students:
+			if student.id not in ids:
+				ids.append(student.id)
+
+	## an array of all students current user has access to
+	students = Student.query.filter(Student.id.in_(ids)).all()
+
+	## now fetch all posts about those students
+	posts = Post.query.filter(Post.student_id.in_(ids)).all()
+
+	### now fetch all comments from those posts
+	comments = []
+	for post in posts:
+		coms = Comment.query.filter_by(post=post).all()
+		for com in coms:
+			comments.append(com)
+
+
+
+
+	#### build array of result objects made of students, posts and comments
+	results = []
+
+	### set "impossibly" high min_score, so anything is lower than it. 
+	### as far as levenshtein differences between individual words go this is impossibly high
+	### since whats the longest word like 12 characters or something?
+	### min_score is overall lowest score out of all results
+	min_score = 100000
+
+	### iterate through student objects
+	for student in students:
+		### local score for this student object
+		### made by adding smallest levenshtein results together
+		### lower scores are more relevent
+		myscore = 0.0
+
+		### iterate through keywords or search terms
+		for keyword in keywords.split():
+			### lowest levenshtein result of all keyword vs word in text comparisons
+			lowest_lev_result = 10000
+
+			### text to be compared to keywords
+			text = student.firstname + " " + student.lastname
+
+			### iterate through text to compare to keywords
+			for word in text.split():
+
+				### compare word to a keyword
+				lev_result = levenshtein(keyword, word) + .1  ## to avoid results of zero
+
+				### if the comparison produces a smaller result than current lowest result
+				### set current lowest to new result
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+			
+			#### add onto student objects current overall score
+			myscore += lowest_lev_result
+
+		### define textual representaion of the student object
+		_repr = student.lastname + ", " + student.firstname	
+		### define link address of student object
+		address  = "/home/%s/%s/" % (student.grade.name, student.id)
+
+		## adjust final score by date
+		## closer current date is to objects creation date, the more relevent the object is
+		## so it gets a lower score
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(student.created.timetuple())
+		### ratio of current time (in seconds since epoch) vs objects timestamp
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		### adjust obejcts final score by the ratio
+		### +1 is entirely unnecessary
+		myscore = myscore * (ratio + 1)
+
+		### update overal minimum score for all result objects
+		if myscore < min_score:
+			min_score = myscore			
+
+		### create actual result object and append to result array
+		results.append(Result(myscore, _repr, address, "student"))
+
+
+	### see comments above for expanation
+	### same logic, some different variable names/paths
+	for post in posts:
+		myscore = 0.0
+		for keyword in keywords.split():
+			lowest_lev_result = 10000
+
+			for word in post.title.split():
+				lev_result = levenshtein(keyword, word) + .1
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+
+			myscore += lowest_lev_result
+
+		address = "/home/%s/%s/%s/" % (post.student.grade.name, post.student.id, post.id)
+		_repr = post.title
+		
+
+		## adjust final score by date
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(post.created.timetuple())
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		myscore = myscore * (ratio + 1)
+		if myscore < min_score:
+			min_score = myscore				
+		results.append(Result(myscore, _repr, address, "post"))
+
+
+	### see comments on student section for explanation
+	### same logic, some different variable names/paths
+	for comment in comments:
+		myscore = 0.0
+		for keyword in keywords.split():
+			lowest_lev_result = 10000
+			### char counter just counts how many characters we've passed
+			### char_position_word is the position of the last character in the word with the lowest
+			### lev score
+			char_counter = 0
+			char_position_word = 0
+			for word in comment.content.split():
+				lev_result = levenshtein(keyword, word) + .1
+				if lev_result < lowest_lev_result:
+					lowest_lev_result = lev_result
+					char_position_word = char_counter + (len(word))
+				char_counter += (len(word) + 1) ### + 1 because we're splitting on spaces
+			myscore += lowest_lev_result
+
+		address = "/home/%s/%s/%s/#comment-%s" % (comment.post.student.grade.name, comment.post.student.id, comment.post_id, comment.id)
+		_repr = comment.content[:char_position_word] + "..."
+
+		## adjust final score by date
+		epoch_time = time.time()
+		timestamp_ = calendar.timegm(comment.created.timetuple())
+		ratio = (timestamp_ * 1.0) / (epoch_time * 1.0)
+		myscore = myscore * (ratio + 1)
+		if myscore < min_score:
+			min_score = myscore				
+		results.append(Result(myscore, _repr, address, "comment"))
+
+
+	### only return results with 50% variance of lowest score
+	final_results = []
+	score_range = min_score * 1.5
+	for result in results:
+		if result.score < score_range:
+			final_results.append(result)	
+
+	return final_results	
 
 ### routes ###
 
 @app.route('/avatars/<filename>')
-@wrappers.requireLogin
+@requireLogin
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
@@ -114,7 +401,7 @@ def route_login_redirect():
 
 @app.route("/logout/")
 def route_logout():
-	gen.logout()
+	logout()
 	return redirect(url_for('route_login'))
 
 @app.route("/passwordreset/", methods=['GET'])
@@ -251,10 +538,10 @@ def route_register():
 			return render_template("template_registration.html")
 
 		### try to create grades for the school
-		gen.createGrades(s)
+		createGrades(s)
 
 		### create general discussion section for the school
-		gen.createGeneralDiscussion(s)
+		createGeneralDiscussion(s)
 
 
 		### log user in and redirect to homepage
@@ -270,7 +557,7 @@ def route_register():
 	return render_template("template_registration.html", canary=canary)
 
 @app.route("/invite/<email>/", methods=['GET', 'POST'])
-@wrappers.methodTimer
+@methodTimer
 def route_invited_signup(email):
 	#### check if valid email
 	t = Teacher.query.filter_by(email=email).first()
@@ -336,8 +623,8 @@ def route_invited_signup(email):
 
 
 @app.route("/home/")
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home():
 	unviewed = UnviewedComment.query.filter_by(teacher_id=session['user'].id).order_by(UnviewedComment.id.desc())
 	## fetch all students teacher has access to
@@ -377,8 +664,8 @@ def route_home():
 	return render_template("template_home.html", grades=shown_grades, unviewed=shown_unviewed)
 
 @app.route("/home/settings/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_settings():
 
 	if request.method == "POST":
@@ -388,7 +675,7 @@ def route_home_settings():
 		# pull teacher and set and save avatar
 		teacher = Teacher.query.filter_by(id=session['user'].id).first()
 		if 'avatar' in request.files:
-			gen.saveAvatar(teacher=teacher, request=request)
+			saveAvatar(teacher=teacher, request=request)
 			flash("Successfully saved avatar.")
 
 	#create canary
@@ -396,8 +683,8 @@ def route_home_settings():
 	return render_template("template_home_settings.html", canary=canary)
 
 @app.route("/home/<grade>/")
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_grade(grade):
 	g = Grade.query.filter_by(name=grade, school_id=session['user'].school_id).first()
 	students = Student.query.filter_by(grade=g).all()
@@ -424,8 +711,8 @@ def route_home_grade(grade):
 	return render_template("template_home_grade.html", grade=g, students=sorted(allowed_students, key=lambda student:student.lastname))
 
 @app.route("/home/general-discussion/")
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_general():
 	db.session.add(session['user'])
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
@@ -434,8 +721,8 @@ def route_home_general():
 	return render_template("template_home_general_discussion.html", posts=posts)
 
 @app.route("/home/general-discussion/compose/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_general_compose():
 	db.session.add(session['user'])
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
@@ -472,8 +759,8 @@ def route_home_general_compose():
 	return render_template("template_home_general_discussion_compose.html", canary=canary)
 
 @app.route("/home/general-discussion/<post_id>/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_general_post(post_id):
 	db.session.add(session['user'])
 	s = Student.query.filter_by(firstname=str(session['user'].school_id)).first()
@@ -515,8 +802,8 @@ def route_home_general_post(post_id):
 	return render_template("template_home_general_discussion_post.html", comments=comments, post=p, canary=canary)
 
 @app.route("/home/general-discussion/<post_id>/<comment_id>/edit/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_general_post_comment_edit(post_id, comment_id):
 	p = Post.query.filter_by(id=post_id).first()
 	c = Comment.query.filter_by(id=comment_id).first()
@@ -548,9 +835,9 @@ def route_home_general_post_comment_edit(post_id, comment_id):
 	return render_template("template_home_general_discussion_post_comment.html", comment=c, post=p, canary=canary)
 
 @app.route("/home/<grade>/<student_id>/", methods=['GET'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requirePermission
+@methodTimer
+@requireLogin
+@requirePermission
 def route_home_grade_student(grade, student_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade)
@@ -559,9 +846,9 @@ def route_home_grade_student(grade, student_id):
 	return render_template("template_home_grade_student.html", student=s, grade=g, posts=posts)
 
 @app.route("/home/<grade>/<student_id>/<post_id>/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requirePermission
+@methodTimer
+@requireLogin
+@requirePermission
 def route_home_grade_student_post(grade, student_id, post_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade).first()
@@ -597,8 +884,8 @@ def route_home_grade_student_post(grade, student_id, post_id):
 	return render_template("template_home_grade_student_post.html", post=p, comments=comments)
 
 @app.route("/home/<grade>/<student_id>/<post_id>/<comment_id>/edit", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comment_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade).first()
@@ -634,9 +921,9 @@ def route_home_grade_student_post_comment_edit(grade, student_id, post_id, comme
 
 
 @app.route("/home/<grade>/<student_id>/compose/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requirePermission
+@methodTimer
+@requireLogin
+@requirePermission
 def route_home_grade_student_compose(grade, student_id):
 	s = Student.query.filter_by(id=student_id).first()
 	g = Grade.query.filter_by(name=grade)
@@ -672,16 +959,16 @@ def route_home_grade_student_compose(grade, student_id):
 	return render_template("template_home_grade_student_compose.html", student=s, canary=canary)
 
 @app.route("/home/admin/")
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin():
 	return render_template("template_admin.html")
 
 @app.route("/home/admin/teachers/", methods=["GET", "POST"])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers():
 
 	teachers = Teacher.query.filter_by(school_id=session['user'].school_id)
@@ -737,9 +1024,9 @@ http://roundtableforums.net/invite/%s/?key=%s""" % (t.email, t.onetimekey)
 	return render_template("template_admin_teachers.html", teachers=teachers, canary=canary)
 
 @app.route("/home/admin/teachers/delete/", methods=['POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers_delete():
 	# check canary
 	if not checkCanary(session, request):
@@ -756,9 +1043,9 @@ def route_home_admin_teachers_delete():
 	return redirect(url_for("route_home_admin_teachers"))
 
 @app.route("/home/admin/teachers/resend/", methods=['POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers_resend():
 	# check canary
 	if not checkCanary(session, request):
@@ -782,9 +1069,9 @@ def route_home_admin_teachers_resend():
 	return redirect(url_for("route_home_admin_teachers"))
 
 @app.route("/home/admin/teachers/<teacher_id>/", methods=['POST', 'GET'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers_teacher(teacher_id):
 	teacher = Teacher.query.filter_by(id=teacher_id, school_id=session['user'].school_id).first()
 	if not teacher:
@@ -862,9 +1149,9 @@ def route_home_admin_teachers_teacher(teacher_id):
 	return render_template("template_admin_teachers_teacher.html", teacher=teacher, grades=gradelist, canary=canary)
 
 @app.route("/home/admin/teachers/<teacher_id>/makeadmin/", methods=['POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers_teacher_makeadmin(teacher_id):
 	if not checkCanary(session, request):
 		abort(401)
@@ -875,9 +1162,9 @@ def route_home_admin_teachers_teacher_makeadmin(teacher_id):
 	return redirect(url_for("route_home_admin_teachers_teacher", teacher_id=teacher_id))
 
 @app.route("/home/admin/teachers/<teacher_id>/removeadmin/", methods=['POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_teachers_teacher_removeadmin(teacher_id):
 	if not checkCanary(session, request):
 		abort(401)
@@ -888,9 +1175,9 @@ def route_home_admin_teachers_teacher_removeadmin(teacher_id):
 	return redirect(url_for("route_home_admin_teachers_teacher", teacher_id=teacher_id))
 
 @app.route("/home/admin/students/", methods=['GET', 'POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_students():
 	if request.method == "POST":
 		# check canary
@@ -943,9 +1230,9 @@ def route_home_admin_students():
 	return render_template("template_admin_students.html", students_by_grade=s_by_g, canary=canary)
 
 @app.route("/home/admin/students/delete/<student_id>/<secret_key>", methods=['GET'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_students_delete(student_id, secret_key):
 
 	## custom canary for GET
@@ -960,9 +1247,9 @@ def route_home_admin_students_delete(student_id, secret_key):
 	return redirect(url_for("route_home_admin_students"))
 
 @app.route("/home/admin/students/graduate/", methods=['POST'])
-@wrappers.methodTimer
-@wrappers.requireLogin
-@wrappers.requireAdmin
+@methodTimer
+@requireLogin
+@requireAdmin
 def route_home_admin_students_graduate():
 	if not checkCanary(session, request):
 		abort(401)
@@ -986,8 +1273,8 @@ def route_home_admin_students_graduate():
 	return redirect(url_for("route_home_admin_students"))
 
 @app.route("/home/help/", methods=['POST', 'GET'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_help():
 
 	if request.method == "POST":
@@ -1007,8 +1294,8 @@ def route_home_help():
 
 
 @app.route("/home/search/", methods=['GET'])
-@wrappers.methodTimer
-@wrappers.requireLogin
+@methodTimer
+@requireLogin
 def route_home_search():
 	### for pagination check what page we're on, if none provided, pick 0
 	if 'page' in request.args:
@@ -1026,7 +1313,7 @@ def route_home_search():
 	### then don't recalc search
 	if 'search_query' in session and 'search_final_results' in session:
 		if session['search_query'] != keywords:
-			final_results = gen.search_helper(teacher=teacher, keywords=keywords)
+			final_results = search_helper(teacher=teacher, keywords=keywords)
 
 			### store results and query in session
 			session['search_final_results'] = final_results
@@ -1037,7 +1324,7 @@ def route_home_search():
 			final_results = session['search_final_results']
 	### else 'search_query' and 'search_final_results' do not exist in the session
 	else:
-		final_results = gen.search_helper(teacher=teacher, keywords=keywords)
+		final_results = search_helper(teacher=teacher, keywords=keywords)
 
 		### store results and query in session
 		session['search_final_results'] = final_results
