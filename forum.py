@@ -564,9 +564,6 @@ def route_invited_signup(email):
 	if request.args.get("key") != t.onetimekey:
 		abort(401)
 
-
-	#### add verification of invite ####
-
 	if request.method == "POST":
 		if not request.form['firstname']:
 			flash("Please enter your firstname.")
@@ -595,8 +592,8 @@ def route_invited_signup(email):
 		try:
 			db.session.commit()
 		except exc.SQLAlchemyError, e:
-			flash("I'm sorry, the email address you entered is already registered. Details: " + str(e))
-			return render_template("template_registration.html")
+			flash("I'm sorry, there was an error creating your account. Details: " + str(e))
+			return render_template("template_invited_user_registration.html")
 
 		### log user in and redirect to homepage
 		user = Teacher.query.filter_by(email=t.email).first()
