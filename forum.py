@@ -373,6 +373,7 @@ def route_login():
 	if request.method == "POST":
 		### first check canary
 		if not checkCanary(session=session, request=request):
+			print "canary abort"
 			abort(401)
 		### fetch user info
 		user = Teacher.query.filter_by(email=request.form['email']).first()

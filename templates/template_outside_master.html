@@ -3,7 +3,7 @@
 
 {% block head %}
 <head>
-    <title>{% block title %}{% endblock %}</title>
+    <title>Round Table Forums</title>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.min.css'>
     <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
     <link rel='stylesheet' href='/static/site_color.css'>
@@ -19,8 +19,9 @@
         .whitetext {
             color:white;
         }
-        .titlearea{
-            box-shadow: 10px 10px 5px white;
+        .whitetext h1 a {
+            text-decoration: none;
+            color:white;
         }
     </style>
 </head>
@@ -33,7 +34,7 @@
         <div class='container'>
             <div class='row'>
                 <div class='span12'>
-                     <legend class='whitetext'><h1>Round Table Forums <small>Login Page</small></h1></legend>
+                     <legend class='whitetext'><h1><a href='/'>Round Table Forums</a> <small>Login Page</small></h1></legend>
                 </div>
             </div>
         </div>
