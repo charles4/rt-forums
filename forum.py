@@ -543,6 +543,16 @@ def route_register():
 		### create general discussion section for the school
 		createGeneralDiscussion(s)
 
+		### send email notifcation to admin of new signup
+		address = "charles4@email.arizona.edu"
+		subjectline = "A new user has signed up for roundtableforums."
+		msg = Message(subjectline,
+			      sender="signup@roundtableforums.net",
+			      recipients=[address])
+		msg.body = """The new user's email address is: %s""" % t.email
+
+		mail.send(msg)
+
 
 		### log user in and redirect to homepage
 		user = Teacher.query.filter_by(email=t.email).first()
@@ -1293,7 +1303,7 @@ def route_home_help():
 
 
 
-@app.route("/home/search/", methods=['GET'])
+@app.route("/home/search/", methods=['GET', 'POST'])
 @methodTimer
 @requireLogin
 def route_home_search():

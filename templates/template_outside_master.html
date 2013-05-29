@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+{% block head %}
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.min.css'>
+    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
+    <link rel='stylesheet' href='/static/site_color.css'>
+    <style>
+        .error{
+           color:red;
+        }
+        .chalk-background{
+            background-image: url("/static/chalkboard.jpg");
+            background-size: 100% 100%;
+            padding:15px;
+        }
+        .whitetext {
+            color:white;
+        }
+        .titlearea{
+            box-shadow: 10px 10px 5px white;
+        }
+    </style>
+</head>
+{% endblock %}
+
+{% block body %}
+<body  class='chalk-background' >
+    {% block titlearea %}
+    <div class=''>
+        <div class='container'>
+            <div class='row'>
+                <div class='span12'>
+                     <legend class='whitetext'><h1>Round Table Forums <small>Login Page</small></h1></legend>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    {% block contentarea %}
+        <div>
+        <div class='container'>
+            <div class='row'>
+                <div class='span3 well'>
+                    {% block col1 %} 
+                    {% endblock %}    
+                </div>
+                <div class='span3 well'>
+                    {% block col2 %}
+                    {% endblock %}
+                </div>
+                
+                
+                <div class='span4 well'>
+                    {% block col3 %}
+                    {% endblock %}
+                </div>
+            </div>
+
+
+            <div class='container footer'>
+                {% block footer %}
+                     <span id="cdSiteSeal2"><script type="text/javascript" src="//tracedseals.starfieldtech.com/siteseal/get?scriptId=cdSiteSeal2&amp;cdSealType=Seal2&amp;sealId=55e4ye7y7mb7309fc281e14f5fa2345bm9y7mb7355e4ye76d475e883928e63de"></script></span>
+                {% endblock %}
+            </div>
+
+        </div>
+        </div>
+    {% endblock %}
+</body>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-41260108-1', 'roundtableforums.net');
+  ga('send', 'pageview');
+
+</script>
+
+{% endblock %}

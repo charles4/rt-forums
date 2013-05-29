@@ -1,77 +1,84 @@
-<!DOCTYPE html>
-<html lang='en'>
-<head>
-    {% block head %}
-    <title>{% block title %}{% endblock %}</title>
-    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap.min.css'>
-    <link rel='stylesheet' href='/static/bootstrap/css/bootstrap-responsive.min.css'>
-    {% endblock %}
+{% extends "template_outside_master.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block body %}
+	{{ super() }}
+{% endblock %}
 
-</head>
-<body>
-	<div class='container'>
+{% block titlearea %}
+    <div class='container'>
+        <div class='row'>
+            <div class='span12'>
+                 <legend class='whitetext'><h1>Round Table Forums <small>Registration</small></h1></legend>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block contentarea %}
+	{{ super() }}
+{% endblock %}
 
-	{% block body %}
-	<div class='row'>
-		<div class='span7'>
-			<h1>Round Table Forums</h1>
-			<h4>A forum system designed for teachers.</h4>
-		</div>
-		<div class='span5'>
+{% block col1 %}
+    <h4>What? Why?</h4>
+    <p>Round Table Forums is a site to create a forum for your school that allows your teachers to discuss and share information about their students.</p>
+    <p>It makes it easy to manage students by creating a forum for each one and grouping them by grade.</p>
+    <p>It allows you to graduate students from year to year, moving up between the grades. That way your second grade teacher will always have access to the students in the second grade, without having to redo forum settings and permissions each year.</p>
+    <p>Round Table Forums makes retention of information about students easy. If your fourth grade teacher makes a post noting that a student learns best when working on their own, the fifth grade teacher will have access to that information the next year when the student is in the fifth grade.</p>
+    <p>Round Table Forums makes it easy to grant and manage permissions, so you can ensure each teacher only has access to information about the students they work with.</p>
+    <h4>Security?</h4>
+    <p>Round Table Forums is only accessible over SSL, only stores <a href="http://bcrypt.sourceforge.net/">bcrypt</a> hashed copies of passwords and is hosted on virtual servers out of <a href="http://digitalocean.com">DigitalOcean</a>.</p>
+{% endblock %}
+{% block col2 %}
+	<h4>Have a question?</h4>
+	<p>Feel free to send me an email at <a href='#'>charles@roundtableforums.net</a></p>
+{% endblock %}
 
-			<form method='POST' class='well'>
-				<legend>Sign your school up for the beta</legend>
+{% block col3 %}
+	<form method='POST' class='well'>
+		<legend>Your details</legend>
 
-				{% block messages %}
-					<div class='row'>
-					<div class='span5'>
-			       	{% with messages = get_flashed_messages() %}
-			            {% if messages %}
-			                <ul class=flashes>
-			                {% for message in messages %}
-			                    <li>{{ message }}</li>
-			                {% endfor %}
-			            </ul>
-			            {% endif %}
-			        {% endwith %}
-			   		</div>
-					</div>
-			    {% endblock %}
+		{% block messages %}
+			<div class='row'>
+			<div class='span5'>
+	       	{% with messages = get_flashed_messages() %}
+	            {% if messages %}
+	                <ul class=flashes>
+	                {% for message in messages %}
+	                    <li>{{ message }}</li>
+	                {% endfor %}
+	            </ul>
+	            {% endif %}
+	        {% endwith %}
+	   		</div>
+			</div>
+	    {% endblock %}
 
-				<label for="schoolname">Name of your School</label>
-				<input type="text" name="schoolname"></input>
+		<label for="schoolname">Name of your School</label>
+		<input type="text" name="schoolname"></input>
 
-				<label for="country">Country</label>
-				<input type='text' name='country'></input>
+		<label for="country">Country</label>
+		<input type='text' name='country'></input>
 
-				<label for="firstname">Your Firstname</label>
-				<input type="text" name="firstname"></input>
+		<label for="firstname">Your Firstname</label>
+		<input type="text" name="firstname"></input>
 
-				<label for="lastname">Your Lastname</label>
-				<input type="text" name="lastname"></input>
+		<label for="lastname">Your Lastname</label>
+		<input type="text" name="lastname"></input>
 
-				<label for="email">Your Email Address</label>
-				<input type="email" name="email"></input>
-				<span class='help-block'>This email will be used for logging in and resetting your password should you need to.</span>
-				
-				<label for="password">Your Password</label>
-				<input type="password" name="password"></input>
-				<span class='help-block'>While I am not your boss and there are no actual rules for your password. I would suggest you use something on the longer side.</span>
+		<label for="email">Your Email Address</label>
+		<input type="email" name="email"></input>
+		<span class='help-block'>This email will be used for logging in and resetting your password should you need to.</span>
+		
+		<label for="password">Your Password</label>
+		<input type="password" name="password"></input>
+		<span class='help-block'>While I am not your boss and there are no actual rules for your password. I would suggest you use something on the longer side.</span>
 
-				<label for"password-confirm">Confirm your password</label>
-				<input type="password" name="password-confirm"></input>
+		<label for"password-confirm">Confirm your password</label>
+		<input type="password" name="password-confirm"></input>
 
-				<input type='hidden' name='canary' value='{{ canary }}'></input>
+		<input type='hidden' name='canary' value='{{ canary }}'></input>
 
-				<button class='btn pull-right'>Submit</button>
-			</form>
-			<br>
-			 <span id="cdSiteSeal2"><script type="text/javascript" src="//tracedseals.starfieldtech.com/siteseal/get?scriptId=cdSiteSeal2&amp;cdSealType=Seal2&amp;sealId=55e4ye7y7mb7309fc281e14f5fa2345bm9y7mb7355e4ye76d475e883928e63de"></script></span>
-		</div>
-		<div class='span3'>
-
-		</div>
-	</div>
-	{% endblock %}
-	</div>
-</body>
+		<button class='btn btn-primary'>Sign up</button>
+	</form>
+{% endblock %}
