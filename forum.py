@@ -37,11 +37,22 @@ from PIL import Image
 UPLOAD_FOLDER = '/var/forum/uploads'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
+### import private application passwords and whatnot
+app_info = {}
+f = open('app.info', 'r')
+for line in f.readlines():
+	line = line.strip("\n")
+	parts = line.split(" ")
+	key = parts[0]
+	value = parts[1]
+
+	app_info[key] = value
+
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://charles:AnneHathaway123@roundtableforums.net/roundtableforums_db'
-app.secret_key = 'W\xa8\x01\x83c\t\x06\x07p\x9c\xed\x13 \x98\x17\x0f\xf9\xbe\x18\x8a|I\xf4U'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%s:%s@roundtableforums.net/%s' % (app_info["msyql_user"], app_info["msql_pass"], app_info["mysql_db"])
+app.secret_key = app_info["secret_key"]
 
 
 bcrypt = Bcrypt(app)
@@ -234,8 +245,8 @@ def search_helper(keywords, teacher):
 	results = []
 
 	### set "impossibly" high min_score, so anything is lower than it. 
-	### as far as levenshtein differences between individual words go this is impossibly high
-	### since whats the longest word like 12 characters or something?
+	### as far as levenshtein differences between individual words go this is effectively impossibly high
+	### since whats the longest word like 20 characters or something?
 	### min_score is overall lowest score out of all results
 	min_score = 100000
 
